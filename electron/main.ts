@@ -1,13 +1,16 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, session } from 'electron'
-import { join, dirname, resolve, sep } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { join, resolve, sep } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import { resolveTools, isAllowedVodUrl } from '../engine/src/index.js'
 import { analyze, downloadAnalysis, exportTimeline } from '../engine/src/index.js'
 import type { AnalyzeInput, ProviderContext, RosterEntry } from '../engine/src/index.js'
 import { CH, type DownloadRequest, type ExportRequest } from '../shared/ipc.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+// This file is bundled to CommonJS by esbuild, so __dirname is the native CJS global
+// (resolves to dist-electron/). Do NOT compute it from import.meta.url — esbuild leaves
+// that undefined in CJS output, which crashes the main process on load.
+declare const __dirname: string
 const isDev = !!process.env.VITE_DEV_SERVER_URL
 
 // Directories the user has explicitly chosen (folder picker / default / download target).

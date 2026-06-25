@@ -2,7 +2,7 @@
 
 Turn **one** anchor stream VOD + a timestamp range into a folder of **perfectly time-aligned multi-POV clips** from every collaborator who was live in that same wall-clock window — plus a **pre-synced Premiere/Resolve timeline** you drop straight into your edit.
 
-> Status: **design complete, building v0 (headless engine).** Full architecture, UX, and roadmap in [DESIGN.md](DESIGN.md).
+> Status: **working Windows app (Electron).** Sync engine, CLI, and the full GUI are built and verified end-to-end; two security + bug analysis rounds passed (see [SECURITY.md](SECURITY.md)). Architecture/UX/roadmap in [DESIGN.md](DESIGN.md).
 
 ## What it does
 

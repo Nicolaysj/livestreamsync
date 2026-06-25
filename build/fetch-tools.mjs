@@ -10,6 +10,11 @@ import process from 'node:process'
 
 const TOOLS = join(process.cwd(), 'tools')
 
+// Use the Windows system bsdtar by absolute path: it extracts .zip and handles drive
+// paths. (Git Bash's GNU `tar` on PATH cannot read zips and misreads "C:\…".)
+const SYSTAR =
+  process.platform === 'win32' ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar'
+
 // yt-dlp pinned to a specific release (also auto-updates at runtime). Verified against
 // the release's official SHA2-256SUMS.
 const YTDLP_TAG = '2026.02.04'
@@ -75,7 +80,8 @@ async function main() {
     const tmp = join(TOOLS, '_ffmpeg')
     await writeFile(zip, zipBuf)
     await mkdir(tmp, { recursive: true })
-    await exec('tar', ['-xf', zip, '-C', tmp]) // Windows 10+ bsdtar extracts .zip
+    // Use relative names with cwd=TOOLS so tar doesn't read "C:\…" as a remote host:path.
+    await exec(SYSTAR, ['-xf', '_ffmpeg.zip', '-C', '_ffmpeg'], { cwd: TOOLS }) // Win10+ bsdtar extracts .zip
     const ff = await findFile(tmp, 'ffmpeg.exe')
     if (!ff) throw new Error('ffmpeg.exe not found in archive')
     await copyFile(ff, join(TOOLS, 'ffmpeg.exe'))

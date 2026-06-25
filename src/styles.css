@@ -1,0 +1,122 @@
+@import 'tailwindcss';
+
+/* ----- POVsync theme: sleek, dark, violet accent ----- */
+@theme {
+  --color-bg: #0a0a0f;
+  --color-bg-2: #0e0e16;
+  --color-panel: #14141d;
+  --color-panel-2: #1a1a26;
+  --color-border: #262633;
+  --color-border-2: #32324a;
+
+  --color-ink: #ECECF3;
+  --color-muted: #9A9AB0;
+  --color-faint: #62627A;
+
+  --color-accent: #8B5CF6;
+  --color-accent-2: #A78BFA;
+  --color-accent-soft: #6D28D9;
+
+  --color-ok: #34D399;
+  --color-warn: #FBBF24;
+  --color-danger: #F87171;
+  --color-info: #60A5FA;
+  --color-twitch: #9146FF;
+  --color-youtube: #FF4D4D;
+
+  --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+
+  --radius: 0.875rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+    user-select: none;
+  }
+  input,
+  textarea {
+    user-select: text;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 40%, transparent);
+  }
+  /* sleek thin scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border-2);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-faint);
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: color-mix(in oklab, var(--color-panel) 86%, transparent);
+    backdrop-filter: blur(12px);
+  }
+  .ring-accent {
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 55%, transparent),
+      0 0 28px -6px color-mix(in oklab, var(--color-accent) 60%, transparent);
+  }
+  .text-gradient {
+    background: linear-gradient(100deg, var(--color-accent-2), var(--color-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .grid-fade {
+    background-image: radial-gradient(circle at 1px 1px, var(--color-border) 1px, transparent 0);
+    background-size: 22px 22px;
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+}
+
+/* Subtle entrance + shimmer used by progress bars */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, #fff 14%, transparent), transparent);
+  transform: translateX(-100%);
+  animation: shimmer 1.6s infinite;
+}

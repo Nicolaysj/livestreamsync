@@ -3,13 +3,18 @@ node_modules/
 .pnp
 .pnp.js
 
-# Builds / bundles
+# Builds / bundles (note: /build holds source build scripts and IS tracked)
 dist/
+dist-electron/
 dist-ssr/
-build/
 out/
+release/
 .vite/
 *.tsbuildinfo
+
+# Local run output / test artifacts
+test-out/
+povsync-output/
 
 # Tauri / Rust
 src-tauri/target/

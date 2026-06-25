@@ -33,7 +33,7 @@ export default function App() {
   const [xmlPath, setXmlPath] = useState<string | undefined>()
   const analysisRef = useRef<Analysis | null>(null)
   analysisRef.current = analysis
-  const cancelledRef = useRef(false)
+  const jobIdRef = useRef(0)
 
   useEffect(() => {
     api.getRoster().then(setRoster).catch(() => {})
@@ -89,7 +89,7 @@ export default function App() {
 
   const runDownload = async () => {
     if (!analysis) return
-    cancelledRef.current = false
+    const myJob = ++jobIdRef.current
     setStage('downloading')
     setProgress({})
     try {
@@ -97,13 +97,13 @@ export default function App() {
         analysis,
         options: { outDir: form.outDir, quality: form.quality, padSec: 4, filenamePrefix: 'POVsync' },
       })
-      if (cancelledRef.current) return // user cancelled mid-flight; stay on review
+      if (jobIdRef.current !== myJob) return // superseded by a cancel/new job
       const updated = { ...analysis, povs: [...povs] }
       setAnalysis(updated)
       setStage('done')
       if (form.exportXml) void runExport(updated)
     } catch (e) {
-      if (cancelledRef.current) return
+      if (jobIdRef.current !== myJob) return
       setError(e instanceof Error ? e.message : 'Download failed.')
       setStage('review')
     }
@@ -163,7 +163,7 @@ export default function App() {
                 onReveal={(f) => api.revealFile(f)}
                 onNewJob={newJob}
                 onCancel={() => {
-                  cancelledRef.current = true
+                  jobIdRef.current++ // invalidate the in-flight job's continuation
                   api.cancel()
                   setStage('review')
                 }}

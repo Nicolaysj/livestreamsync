@@ -115,7 +115,7 @@ export async function downloadSegment(
   // SECURITY: '--' ends option parsing so a URL can never be read as a yt-dlp flag.
   args.push('--', seg.url)
 
-  const expectedLen = Math.max(1, windowLen + 2 * pad)
+  const expectedLen = Math.max(1, endSec - startSec)
   let sawSubOnly = false
   let lastPercent = 0
 
@@ -154,6 +154,10 @@ export async function downloadSegment(
   let code: number | null
   try {
     code = await handle.done
+  } catch (err) {
+    // Stall watchdog or spawn failure rejects here — clean up the partial file too.
+    await rm(outputFile, { force: true }).catch(() => {})
+    throw err instanceof Error ? err : new Error('Download failed.')
   } finally {
     signal?.removeEventListener('abort', onAbort)
   }

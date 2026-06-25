@@ -132,18 +132,26 @@ function registerIpc() {
         }
       }
     }
-    allowDir(req.options?.outDir)
+    // SECURITY: only download into a folder the user already chose (picker / default).
+    // Do NOT add the renderer-supplied path to the allow-list — that would let a
+    // compromised renderer poison it and later open arbitrary files via shell.openPath.
+    if (!isPathAllowed(req.options?.outDir)) throw new Error('Download folder is not permitted.')
+
+    const ac = new AbortController()
     currentAbort?.abort()
-    currentAbort = new AbortController()
+    currentAbort = ac
     const sender = e.sender
-    const result = await downloadAnalysis(
-      req.analysis,
-      req.options,
-      ctx(),
-      { onProgress: (ev) => { if (!sender.isDestroyed()) sender.send(CH.progress, ev) } },
-      currentAbort.signal,
-    )
-    return result
+    try {
+      return await downloadAnalysis(
+        req.analysis,
+        req.options,
+        ctx(),
+        { onProgress: (ev) => { if (!sender.isDestroyed()) sender.send(CH.progress, ev) } },
+        ac.signal,
+      )
+    } finally {
+      if (currentAbort === ac) currentAbort = null
+    }
   })
 
   ipcMain.handle(CH.cancel, async () => {
@@ -164,7 +172,16 @@ function registerIpc() {
   })
 
   ipcMain.handle(CH.openFolder, async (_e, p: unknown) => {
-    if (isPathAllowed(p)) await shell.openPath(resolve(p))
+    if (!isPathAllowed(p)) return
+    const rp = resolve(p)
+    // Only ever open a directory — never let shell.openPath launch a file (.exe/.lnk/…).
+    const { statSync } = await import('node:fs')
+    try {
+      if (!statSync(rp).isDirectory()) return
+    } catch {
+      return
+    }
+    await shell.openPath(rp)
   })
 
   ipcMain.handle(CH.revealFile, async (_e, p: unknown) => {

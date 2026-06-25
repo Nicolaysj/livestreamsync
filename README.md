@@ -39,6 +39,32 @@ Tauri 2 (Rust shell + TypeScript/React UI) · bundled `ffmpeg` · auto-updating 
 | **v2** | FCP7-XML export · smart roster · audio fine-sync · sub-only/members auth · **YouTube provider** · ProRes transcode |
 | **v3** | Code signing · auto-update · polish (macOS to follow) |
 
+## Develop & build
+
+Requires Node 20+. In development the engine uses the `yt-dlp` / `ffmpeg` on your PATH;
+packaging bundles verified copies into the app.
+
+```bash
+npm install
+npm run dev        # Electron app, hot-reload renderer
+npm run dev:web    # renderer only, in a browser (fast UI iteration)
+npm start          # run the built app (electron .)
+npm run typecheck  # tsc --noEmit
+
+# Headless v0 engine (the GUI drives this same engine):
+npm run cli -- "https://www.twitch.tv/videos/<id>" 04:40:21 04:55:50 --streamers pokimane,lilypichu --xml
+
+# Package the Windows app (downloads + SHA-256-verifies yt-dlp & ffmpeg, then builds):
+npm run package    # -> release/  (NSIS installer)
+```
+
+The packaged app resolves its bundled tools from `resources/tools`; in dev it falls back
+to your PATH. **Installer note:** `electron-builder` extracts a `winCodeSign` cache that
+contains macOS symlinks; on Windows, creating those needs **Developer Mode** (Settings →
+Privacy & security → For developers) or an elevated shell. With it enabled, `npm run
+package` produces the installer; the app itself runs without it via `npm run dev` / the
+unpacked build.
+
 ## Responsible use
 
 An internal editing tool for creators working with their own and collaborators' content. It respects platform authentication (no DRM or entitlement bypass — sub/members-only uses your own login), caches metadata only briefly, and keeps downloads local. You are responsible for having the rights to any content you edit and publish.

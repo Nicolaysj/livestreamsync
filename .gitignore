@@ -13,7 +13,7 @@ release/
 *.tsbuildinfo
 
 # Local run output / test artifacts
-test-out/
+test-out*/
 povsync-output/
 
 # Tauri / Rust
@@ -28,12 +28,13 @@ bin/
 *.exe
 *.dll
 
-# Downloaded media — never commit VOD clips or audio extracts
+# Downloaded media — never commit VOD clips or audio extracts.
+# NOTE: do NOT add "*.ts" here — it would ignore all TypeScript source.
+# Transient MPEG-TS fragments only ever land in the ignored output dirs above.
 *.mp4
 *.mkv
 *.mov
 *.webm
-*.ts
 *.m4a
 *.aac
 *.wav

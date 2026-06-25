@@ -33,11 +33,12 @@ export default function App() {
   const [xmlPath, setXmlPath] = useState<string | undefined>()
   const analysisRef = useRef<Analysis | null>(null)
   analysisRef.current = analysis
+  const cancelledRef = useRef(false)
 
   useEffect(() => {
     api.getRoster().then(setRoster).catch(() => {})
     api.getDefaults().then((d) => setForm((f) => (f.outDir ? f : { ...f, outDir: d.outDir }))).catch(() => {})
-    const off = api.onProgress((ev) => setProgress((prev) => ({ ...prev, [ev.handle]: ev })))
+    const off = api.onProgress((ev) => setProgress((prev) => ({ ...prev, [`${ev.platform}:${ev.handle}`]: ev })))
     return off
   }, [])
 
@@ -88,6 +89,7 @@ export default function App() {
 
   const runDownload = async () => {
     if (!analysis) return
+    cancelledRef.current = false
     setStage('downloading')
     setProgress({})
     try {
@@ -95,11 +97,13 @@ export default function App() {
         analysis,
         options: { outDir: form.outDir, quality: form.quality, padSec: 4, filenamePrefix: 'POVsync' },
       })
+      if (cancelledRef.current) return // user cancelled mid-flight; stay on review
       const updated = { ...analysis, povs: [...povs] }
       setAnalysis(updated)
       setStage('done')
       if (form.exportXml) void runExport(updated)
     } catch (e) {
+      if (cancelledRef.current) return
       setError(e instanceof Error ? e.message : 'Download failed.')
       setStage('review')
     }
@@ -159,6 +163,7 @@ export default function App() {
                 onReveal={(f) => api.revealFile(f)}
                 onNewJob={newJob}
                 onCancel={() => {
+                  cancelledRef.current = true
                   api.cancel()
                   setStage('review')
                 }}

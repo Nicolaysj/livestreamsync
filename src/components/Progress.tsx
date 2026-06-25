@@ -31,7 +31,7 @@ export function Progress({
   const targets = analysis.povs.filter((p) => p.selected && STATUS_META[p.status].downloadable)
   const finished = targets.filter((p) => p.outputFile).length
   const overall = targets.length
-    ? Math.round(targets.reduce((s, p) => s + (progress[p.handle]?.percent ?? 0), 0) / targets.length)
+    ? Math.round(targets.reduce((s, p) => s + (progress[`${p.platform}:${p.handle}`]?.percent ?? 0), 0) / targets.length)
     : 0
 
   return (
@@ -58,7 +58,7 @@ export function Progress({
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
         {targets.map((p) => {
-          const ev = progress[p.handle]
+          const ev = progress[`${p.platform}:${p.handle}`]
           const pct = p.outputFile ? 100 : (ev?.percent ?? 0)
           const failed = p.status === 'error' || p.status === 'sub-only'
           return (

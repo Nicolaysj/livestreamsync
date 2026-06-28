@@ -15,9 +15,9 @@ const TOOLS = join(process.cwd(), 'tools')
 const SYSTAR =
   process.platform === 'win32' ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar'
 
-// yt-dlp pinned to a specific release (also auto-updates at runtime). Verified against
-// the release's official SHA2-256SUMS.
-const YTDLP_TAG = '2026.02.04'
+// yt-dlp pinned to a recent release (the app then self-updates it at runtime — YouTube
+// changes break older yt-dlp often). Verified against the release's official SHA2-256SUMS.
+const YTDLP_TAG = '2026.06.09'
 const YTDLP_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/yt-dlp.exe`
 const YTDLP_SUMS = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/SHA2-256SUMS`
 

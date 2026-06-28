@@ -23,6 +23,9 @@ export const CH = {
   getDefaults: 'livestreamsync:getDefaults',
   checkTools: 'livestreamsync:checkTools',
   progress: 'livestreamsync:progress',
+  updateStatus: 'livestreamsync:update:status',
+  updateDownload: 'livestreamsync:update:download',
+  updateInstall: 'livestreamsync:update:install',
   winMinimize: 'livestreamsync:win:minimize',
   winMaximize: 'livestreamsync:win:maximize',
   winClose: 'livestreamsync:win:close',
@@ -47,6 +50,14 @@ export interface ToolStatus {
   ffmpeg: boolean
 }
 
+/** In-app auto-update lifecycle, pushed from main → renderer. */
+export type UpdateStatus =
+  | { state: 'none' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; percent: number }
+  | { state: 'downloaded'; version: string }
+  | { state: 'error'; message: string }
+
 /** The API surfaced on `window.livestreamsync` by the preload bridge. */
 export interface LivestreamSyncApi {
   analyze(input: AnalyzeInput): Promise<Analysis>
@@ -61,6 +72,9 @@ export interface LivestreamSyncApi {
   getDefaults(): Promise<Defaults>
   checkTools(): Promise<ToolStatus>
   onProgress(cb: (ev: ProgressEvent) => void): () => void
+  onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
+  downloadUpdate(): void
+  installUpdate(): void
   minimize(): void
   toggleMaximize(): void
   close(): void

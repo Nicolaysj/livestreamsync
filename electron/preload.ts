@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { CH, type LivestreamSyncApi } from '../shared/ipc.js'
+import { CH, type LivestreamSyncApi, type UpdateStatus } from '../shared/ipc.js'
 import type { ProgressEvent } from '../engine/src/types'
 
 const api: LivestreamSyncApi = {
@@ -19,6 +19,13 @@ const api: LivestreamSyncApi = {
     ipcRenderer.on(CH.progress, listener)
     return () => ipcRenderer.removeListener(CH.progress, listener)
   },
+  onUpdateStatus: (cb) => {
+    const listener = (_e: unknown, s: UpdateStatus) => cb(s)
+    ipcRenderer.on(CH.updateStatus, listener)
+    return () => ipcRenderer.removeListener(CH.updateStatus, listener)
+  },
+  downloadUpdate: () => ipcRenderer.send(CH.updateDownload),
+  installUpdate: () => ipcRenderer.send(CH.updateInstall),
   minimize: () => ipcRenderer.send(CH.winMinimize),
   toggleMaximize: () => ipcRenderer.send(CH.winMaximize),
   close: () => ipcRenderer.send(CH.winClose),

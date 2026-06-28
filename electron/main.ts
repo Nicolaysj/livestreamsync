@@ -1,11 +1,16 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, session } from 'electron'
+import electronUpdater from 'electron-updater'
 import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { readFile, writeFile, mkdir } from 'node:fs/promises'
-import { resolveTools, isAllowedVodUrl } from '../engine/src/index.js'
+import { existsSync } from 'node:fs'
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
+import { resolveTools, resetToolCache, isAllowedVodUrl } from '../engine/src/index.js'
 import { analyze, downloadAnalysis, exportTimeline } from '../engine/src/index.js'
 import type { AnalyzeInput, ProviderContext, RosterEntry } from '../engine/src/index.js'
-import { CH, type DownloadRequest, type ExportRequest } from '../shared/ipc.js'
+import { CH, type DownloadRequest, type ExportRequest, type UpdateStatus } from '../shared/ipc.js'
+
+const { autoUpdater } = electronUpdater
 
 // This file is bundled to CommonJS by esbuild, so __dirname is the native CJS global
 // (resolves to dist-electron/). Do NOT compute it from import.meta.url — esbuild leaves
@@ -42,6 +47,63 @@ function ctx(): ProviderContext {
 
 function rosterPath(): string {
   return join(app.getPath('userData'), 'roster.json')
+}
+
+// ---- yt-dlp self-update -------------------------------------------------------
+// YouTube changes break older yt-dlp often, so copy the bundled binary to a writable
+// per-user location, point the engine at it, and keep it current with `yt-dlp -U`
+// (throttled to once a day). Dev uses whatever yt-dlp is on PATH.
+const ONE_DAY = 24 * 60 * 60 * 1000
+
+async function ensureYtDlpFresh(): Promise<void> {
+  if (!app.isPackaged) return
+  const userTools = join(app.getPath('userData'), 'tools')
+  const dest = join(userTools, 'yt-dlp.exe')
+  const bundled = join(process.resourcesPath, 'tools', 'yt-dlp.exe')
+  try {
+    await mkdir(userTools, { recursive: true })
+    if (!existsSync(dest) && existsSync(bundled)) await copyFile(bundled, dest)
+    if (existsSync(dest)) {
+      process.env.LIVESTREAMSYNC_YTDLP = dest // engine resolves this first (tools.ts)
+      resetToolCache()
+    }
+  } catch (e) {
+    if (isDev) console.error('[yt-dlp] setup failed', e)
+    return
+  }
+  void selfUpdateYtDlp(userTools, dest)
+}
+
+async function selfUpdateYtDlp(userTools: string, dest: string): Promise<void> {
+  const stamp = join(userTools, '.yt-dlp-checked')
+  const last = await readFile(stamp, 'utf8').then((t) => Number(t) || 0).catch(() => 0)
+  if (Date.now() - last < ONE_DAY) return
+  await writeFile(stamp, String(Date.now()), 'utf8').catch(() => {})
+  await new Promise<void>((res) => {
+    const child = spawn(dest, ['-U'], { windowsHide: true })
+    const kill = setTimeout(() => { child.kill(); res() }, 90_000)
+    child.on('error', () => { clearTimeout(kill); res() })
+    child.on('close', () => { clearTimeout(kill); res() })
+  })
+}
+
+// ---- in-app auto-update (electron-updater) ------------------------------------
+// "Notify, install on click": check on launch, tell the renderer when an update is
+// available; the user clicks to download, then clicks again to restart & install.
+function setupAutoUpdate(win: BrowserWindow): void {
+  if (!app.isPackaged) return
+  autoUpdater.autoDownload = false
+  autoUpdater.autoInstallOnAppQuit = false
+  const send = (s: UpdateStatus) => {
+    if (!win.isDestroyed()) win.webContents.send(CH.updateStatus, s)
+  }
+  autoUpdater.on('update-available', (i) => send({ state: 'available', version: i.version }))
+  autoUpdater.on('update-not-available', () => send({ state: 'none' }))
+  autoUpdater.on('download-progress', (p) => send({ state: 'downloading', percent: Math.round(p.percent) }))
+  autoUpdater.on('update-downloaded', (i) => send({ state: 'downloaded', version: i.version }))
+  autoUpdater.on('error', (e) => send({ state: 'error', message: e instanceof Error ? e.message : 'Update failed' }))
+  // Give the renderer a moment to subscribe before the first check resolves.
+  setTimeout(() => void autoUpdater.checkForUpdates().catch((e) => isDev && console.error('[update]', e)), 3000)
 }
 
 const CSP_PROD =
@@ -110,6 +172,8 @@ app.whenReady().then(() => {
 
   registerIpc()
   createWindow()
+  void ensureYtDlpFresh()
+  if (mainWindow) setupAutoUpdate(mainWindow)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -219,6 +283,13 @@ function registerIpc() {
     // resolveTools returns an absolute path when found, else a bare command name.
     const ok = (p: string) => (p.includes('/') || p.includes('\\')) && existsSync(p)
     return { ytDlp: ok(t.ytDlp), ffmpeg: ok(t.ffmpeg) }
+  })
+
+  ipcMain.on(CH.updateDownload, () => {
+    if (app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
+  })
+  ipcMain.on(CH.updateInstall, () => {
+    if (app.isPackaged) autoUpdater.quitAndInstall()
   })
 
   ipcMain.on(CH.winMinimize, () => mainWindow?.minimize())

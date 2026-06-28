@@ -1,6 +1,6 @@
 {
   "name": "livestreamsync",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Multi-POV Twitch + YouTube VOD sync & download tool for video editors",
   "author": "Nicolay Schiøll-Johansen",
@@ -30,6 +30,7 @@
     "@fontsource-variable/geist": "^5.2.9",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.8.9",
     "framer-motion": "^11.11.17",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
@@ -56,6 +57,13 @@
   "build": {
     "appId": "live.nixolay.livestreamsync",
     "productName": "LivestreamSync",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Nicolaysj",
+        "repo": "livestreamsync"
+      }
+    ],
     "files": [
       "dist/**",
       "dist-electron/**",

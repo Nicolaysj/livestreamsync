@@ -15,10 +15,14 @@
   </defs>
   <rect x="0" y="0" width="1024" height="1024" rx="232" fill="url(#bg)"/>
   <rect x="0" y="0" width="1024" height="1024" rx="232" fill="url(#glow)"/>
+  <!-- One offset back card hints at "multiple angles"; the front card stays crisp. -->
   <g filter="url(#shadow)">
-    <rect x="232.5" y="426"   width="365.5" height="279.5" rx="64.5" fill="#ffffff" opacity="0.30"/>
-    <rect x="329.25" y="372.25" width="365.5" height="279.5" rx="64.5" fill="#ffffff" opacity="0.58"/>
-    <rect x="426"   y="318.5" width="365.5" height="279.5" rx="64.5" fill="#ffffff"/>
-    <path d="M555 393.75 L705.5 458.25 L555 522.75 Z" fill="#9E5300"/>
+    <rect x="392" y="296" width="404" height="300" rx="58" fill="#ffffff" opacity="0.55"/>
+  </g>
+  <!-- amber gap so the two cards stay separate even at 16px, then the solid front card -->
+  <rect x="284" y="356" width="436" height="332" rx="74" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <rect x="300" y="372" width="404" height="300" rx="58" fill="#ffffff"/>
+    <path d="M455 446 L611 522 L455 598 Z" fill="#9E5300"/>
   </g>
 </svg>

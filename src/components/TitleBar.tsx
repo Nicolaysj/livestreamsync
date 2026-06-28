@@ -1,6 +1,7 @@
 import { Minus, Square, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { Logo } from './bits'
+import { UpdateButton } from './UpdateButton'
 
 export function TitleBar() {
   return (
@@ -12,6 +13,9 @@ export function TitleBar() {
         </span>
       </div>
       <div className="no-drag flex items-center gap-1">
+        <span className="mr-2">
+          <UpdateButton />
+        </span>
         <button
           onClick={() => api.minimize()}
           className="flex h-7 w-9 items-center justify-center rounded-md text-muted transition-colors hover:bg-white/10 hover:text-ink"

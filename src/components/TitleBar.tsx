@@ -1,7 +1,7 @@
 import { Minus, Square, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { Logo } from './bits'
-import { UpdateButton } from './UpdateButton'
+import { UpdatesMenu } from './UpdatesMenu'
 
 export function TitleBar() {
   return (
@@ -14,7 +14,7 @@ export function TitleBar() {
       </div>
       <div className="no-drag flex items-center gap-1">
         <span className="mr-2">
-          <UpdateButton />
+          <UpdatesMenu />
         </span>
         <button
           onClick={() => api.minimize()}

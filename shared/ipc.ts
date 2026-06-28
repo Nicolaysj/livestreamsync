@@ -23,7 +23,9 @@ export const CH = {
   getDefaults: 'livestreamsync:getDefaults',
   checkTools: 'livestreamsync:checkTools',
   progress: 'livestreamsync:progress',
+  getVersion: 'livestreamsync:getVersion',
   updateStatus: 'livestreamsync:update:status',
+  updateCheck: 'livestreamsync:update:check',
   updateDownload: 'livestreamsync:update:download',
   updateInstall: 'livestreamsync:update:install',
   winMinimize: 'livestreamsync:win:minimize',
@@ -52,6 +54,8 @@ export interface ToolStatus {
 
 /** In-app auto-update lifecycle, pushed from main → renderer. */
 export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
   | { state: 'none' }
   | { state: 'available'; version: string }
   | { state: 'downloading'; percent: number }
@@ -72,7 +76,9 @@ export interface LivestreamSyncApi {
   getDefaults(): Promise<Defaults>
   checkTools(): Promise<ToolStatus>
   onProgress(cb: (ev: ProgressEvent) => void): () => void
+  getVersion(): Promise<string>
   onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
+  checkForUpdate(): void
   downloadUpdate(): void
   installUpdate(): void
   minimize(): void

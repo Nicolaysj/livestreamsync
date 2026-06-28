@@ -97,6 +97,7 @@ function setupAutoUpdate(win: BrowserWindow): void {
   const send = (s: UpdateStatus) => {
     if (!win.isDestroyed()) win.webContents.send(CH.updateStatus, s)
   }
+  autoUpdater.on('checking-for-update', () => send({ state: 'checking' }))
   autoUpdater.on('update-available', (i) => send({ state: 'available', version: i.version }))
   autoUpdater.on('update-not-available', () => send({ state: 'none' }))
   autoUpdater.on('download-progress', (p) => send({ state: 'downloading', percent: Math.round(p.percent) }))
@@ -285,6 +286,15 @@ function registerIpc() {
     return { ytDlp: ok(t.ytDlp), ffmpeg: ok(t.ffmpeg) }
   })
 
+  ipcMain.handle(CH.getVersion, () => app.getVersion())
+  ipcMain.on(CH.updateCheck, (e) => {
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates().catch((err) => isDev && console.error('[update]', err))
+    } else {
+      // Dev build can't self-update; tell the renderer it's "up to date" so the menu resolves.
+      e.sender.send(CH.updateStatus, { state: 'none' } satisfies UpdateStatus)
+    }
+  })
   ipcMain.on(CH.updateDownload, () => {
     if (app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
   })

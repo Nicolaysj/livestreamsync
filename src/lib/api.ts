@@ -92,7 +92,9 @@ const mockApi: LivestreamSyncApi = {
       if (mockProgressCb === cb) mockProgressCb = null
     }
   },
+  getVersion: async () => 'dev',
   onUpdateStatus: () => () => {},
+  checkForUpdate: () => {},
   downloadUpdate: () => {},
   installUpdate: () => {},
   minimize: () => {},

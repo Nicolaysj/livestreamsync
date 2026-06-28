@@ -19,11 +19,13 @@ const api: LivestreamSyncApi = {
     ipcRenderer.on(CH.progress, listener)
     return () => ipcRenderer.removeListener(CH.progress, listener)
   },
+  getVersion: () => ipcRenderer.invoke(CH.getVersion),
   onUpdateStatus: (cb) => {
     const listener = (_e: unknown, s: UpdateStatus) => cb(s)
     ipcRenderer.on(CH.updateStatus, listener)
     return () => ipcRenderer.removeListener(CH.updateStatus, listener)
   },
+  checkForUpdate: () => ipcRenderer.send(CH.updateCheck),
   downloadUpdate: () => ipcRenderer.send(CH.updateDownload),
   installUpdate: () => ipcRenderer.send(CH.updateInstall),
   minimize: () => ipcRenderer.send(CH.winMinimize),

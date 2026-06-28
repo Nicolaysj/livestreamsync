@@ -1,4 +1,4 @@
-// POVsync v0 — headless CLI. Drives the engine end-to-end.
+// LivestreamSync v0 — headless CLI. Drives the engine end-to-end.
 //   tsx cli/index.ts <anchorUrl> <start> <stop> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]
 
 import process from 'node:process'
@@ -63,7 +63,7 @@ async function main() {
     .filter(Boolean)
     .map((handle) => ({ handle }))
 
-  const outDir = resolve(String(flags.out || './povsync-output'))
+  const outDir = resolve(String(flags.out || './livestreamsync-output'))
   const quality = (['source', '1080', '720'].includes(String(flags.quality)) ? flags.quality : 'source') as Quality
 
   const input: AnalyzeInput = {
@@ -76,7 +76,7 @@ async function main() {
 
   const ctx = { tools: resolveTools(), log: (m: string) => console.error(C.dim(`  · ${m}`)) }
 
-  console.log(C.bold('\nPOVsync'))
+  console.log(C.bold('\nLivestreamSync'))
   console.log(C.dim(`Window: ${secToTimecode(startSec)} → ${secToTimecode(endSec)} (${secToTimecode(endSec - startSec)})`))
   process.stdout.write(C.dim('Analyzing… '))
 
@@ -101,7 +101,7 @@ async function main() {
 
   console.log(C.dim(`\nDownloading ${selected.length} clip(s) → ${outDir}\n`))
   const pct: Record<string, number> = {}
-  await downloadAnalysis(analysis, { outDir, quality, padSec: 4, filenamePrefix: 'POVsync' }, ctx, {
+  await downloadAnalysis(analysis, { outDir, quality, padSec: 4, filenamePrefix: 'LivestreamSync' }, ctx, {
     onProgress: (ev) => {
       if (ev.phase === 'downloading' && ev.percent != null) {
         const prev = pct[ev.handle] ?? -1

@@ -1,6 +1,6 @@
-# Contributing to POVsync
+# Contributing to LivestreamSync
 
-Thanks for your interest in POVsync! This is an open-source (MIT) editing tool for
+Thanks for your interest in LivestreamSync! This is an open-source (MIT) editing tool for
 creators, and contributions — bug reports, fixes, features, docs — are welcome.
 
 ## Tech stack
@@ -23,7 +23,7 @@ Tauri, but the app ships on Electron.
   - Windows: `winget install yt-dlp.yt-dlp` and `winget install Gyan.FFmpeg`
   - macOS: `brew install yt-dlp ffmpeg`
 
-The engine resolves these tools in order: env override (`POVSYNC_YTDLP` / `POVSYNC_FFMPEG`)
+The engine resolves these tools in order: env override (`LIVESTREAMSYNC_YTDLP` / `LIVESTREAMSYNC_FFMPEG`)
 → the app's bundled `resources/tools` → your system `PATH`.
 
 ## Getting started
@@ -65,7 +65,7 @@ Flags: `--out <dir>`, `--quality source|1080|720`, `--no-anchor`, `--xml`, `--dr
 ## Packaging the Windows app
 
 ```bash
-npm run package    # → release/POVsync-Setup.exe (NSIS installer)
+npm run package    # → release/LivestreamSync-Setup.exe (NSIS installer)
 ```
 
 `npm run package` runs `fetch-tools` (downloads **and SHA-256-verifies** the pinned
@@ -93,7 +93,7 @@ CI (`.github/workflows/ci.yml`) runs install + typecheck on every push and PR.
 
 ## Reporting bugs & requesting features
 
-Use the [issue tracker](https://github.com/Nicolaysj/povsync/issues). For bugs, include
+Use the [issue tracker](https://github.com/Nicolaysj/livestreamsync/issues). For bugs, include
 your Windows version, what you did, what you expected, and what happened (a screenshot or
 the per-streamer skip reason helps a lot).
 

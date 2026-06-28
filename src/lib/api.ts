@@ -1,11 +1,11 @@
-// Renderer API shim. In Electron, `window.povsync` is provided by the preload bridge.
+// Renderer API shim. In Electron, `window.livestreamsync` is provided by the preload bridge.
 // In a plain browser (UI development / preview), we fall back to a realistic MOCK so
 // the whole flow is clickable without the desktop shell.
 
-import type { PovsyncApi } from '../../shared/ipc'
+import type { LivestreamSyncApi } from '../../shared/ipc'
 import type { Analysis, AnalyzeInput, POVResult, ProgressEvent, RosterEntry } from '../../engine/src/types'
 
-export const isElectron = typeof window !== 'undefined' && !!window.povsync
+export const isElectron = typeof window !== 'undefined' && !!window.livestreamsync
 
 // ---------- Browser mock ----------
 
@@ -56,7 +56,7 @@ function mockAnalysis(input: AnalyzeInput): Analysis {
 
 let mockProgressCb: ((ev: ProgressEvent) => void) | null = null
 
-const mockApi: PovsyncApi = {
+const mockApi: LivestreamSyncApi = {
   analyze: async (input) => {
     await delay(900)
     return mockAnalysis(input)
@@ -70,7 +70,7 @@ const mockApi: PovsyncApi = {
           mockProgressCb?.({ handle: p.handle, platform: p.platform, phase: 'downloading', percent: pct, speed: `${(40 + Math.round(pct / 3))} MB/s` })
           await delay(120)
         }
-        p.outputFile = `C:\\Users\\You\\Videos\\POVsync\\POVsync_${p.displayName}.mp4`
+        p.outputFile = `C:\\Users\\You\\Videos\\LivestreamSync\\LivestreamSync_${p.displayName}.mp4`
         p.fileBytes = 690 * 1024 * 1024
         mockProgressCb?.({ handle: p.handle, platform: p.platform, phase: 'done', percent: 100 })
       }),
@@ -78,13 +78,13 @@ const mockApi: PovsyncApi = {
     return req.analysis.povs
   },
   cancel: async () => {},
-  exportTimeline: async () => 'C:\\Users\\You\\Videos\\POVsync\\POVsync_timeline.xml',
-  pickFolder: async () => 'C:\\Users\\You\\Videos\\POVsync',
+  exportTimeline: async () => 'C:\\Users\\You\\Videos\\LivestreamSync\\LivestreamSync_timeline.xml',
+  pickFolder: async () => 'C:\\Users\\You\\Videos\\LivestreamSync',
   openFolder: async () => {},
   revealFile: async () => {},
   getRoster: async () => MOCK_ROSTER,
   saveRoster: async () => {},
-  getDefaults: async () => ({ outDir: 'C:\\Users\\You\\Videos\\POVsync' }),
+  getDefaults: async () => ({ outDir: 'C:\\Users\\You\\Videos\\LivestreamSync' }),
   checkTools: async () => ({ ytDlp: true, ffmpeg: true }),
   onProgress: (cb) => {
     mockProgressCb = cb
@@ -101,4 +101,4 @@ function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-export const api: PovsyncApi = (typeof window !== 'undefined' && window.povsync) || mockApi
+export const api: LivestreamSyncApi = (typeof window !== 'undefined' && window.livestreamsync) || mockApi

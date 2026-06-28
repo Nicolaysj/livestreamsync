@@ -107,7 +107,7 @@ export function buildFcpXml(opts: FcpExportOptions): string {
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n` +
     `<xmeml version="5">\n` +
-    `<sequence id="povsync-seq">` +
+    `<sequence id="livestreamsync-seq">` +
     `<name>${xmlEscape(opts.sequenceName)}</name>` +
     `<duration>${seqDuration}</duration>${rate}` +
     `<media>` +

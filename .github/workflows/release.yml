@@ -4,7 +4,7 @@ name: Release
 #   npm version 0.1.0 --no-git-tag-version   # bump package.json if needed
 #   git tag v0.1.0 && git push origin v0.1.0
 # This builds the Windows installer and publishes it as a GitHub Release asset,
-# so https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe
+# so https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe
 # always points at the newest build.
 
 on:
@@ -39,7 +39,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release/POVsync-Setup.exe
+            release/LivestreamSync-Setup.exe
             release/*.blockmap
             release/latest.yml
           generate_release_notes: true

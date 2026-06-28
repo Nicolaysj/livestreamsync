@@ -189,7 +189,7 @@ export async function exportTimeline(analysis: Analysis, opts: ExportOptions): P
   if (done.length === 0) throw new Error('Nothing downloaded yet to export.')
 
   const xml = buildFcpXml({
-    sequenceName: `${sanitizeFilenamePart(analysis.anchor.channel)}_POVsync_${secToTimecode(analysis.window.startMs / 1000 - analysis.anchor.startMs / 1000)}`,
+    sequenceName: `${sanitizeFilenamePart(analysis.anchor.channel)}_LivestreamSync_${secToTimecode(analysis.window.startMs / 1000 - analysis.anchor.startMs / 1000)}`,
     fps: opts.fps ?? 60,
     ntsc: opts.ntsc ?? false,
     width: opts.width ?? 1920,
@@ -204,7 +204,7 @@ export async function exportTimeline(analysis: Analysis, opts: ExportOptions): P
     })),
   })
 
-  const xmlPath = join(opts.outDir, 'POVsync_timeline.xml')
+  const xmlPath = join(opts.outDir, 'LivestreamSync_timeline.xml')
   await writeFile(xmlPath, xml, 'utf8')
   return xmlPath
 }

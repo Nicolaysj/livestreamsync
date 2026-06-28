@@ -8,7 +8,7 @@ export function TitleBar() {
       <div className="flex items-center gap-2.5 pl-1">
         <Logo />
         <span className="text-[13px] font-semibold tracking-tight text-ink">
-          POV<span className="text-accent-2">sync</span>
+          Livestream<span className="text-accent-2">Sync</span>
         </span>
       </div>
       <div className="no-drag flex items-center gap-1">

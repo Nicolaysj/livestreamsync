@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* ----- POVsync · Studio Light: warm, editorial, single amber accent ----- */
+/* ----- LivestreamSync · Studio Light: warm, editorial, single amber accent ----- */
 @theme {
   /* Neutrals — warm paper to ink (not pure grey) */
   --color-bg: #fafaf7;        /* paper — app background */

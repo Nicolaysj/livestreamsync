@@ -11,21 +11,21 @@ import type {
 } from '../engine/src/types'
 
 export const CH = {
-  analyze: 'povsync:analyze',
-  download: 'povsync:download',
-  cancel: 'povsync:cancel',
-  exportTimeline: 'povsync:export',
-  pickFolder: 'povsync:pickFolder',
-  openFolder: 'povsync:openFolder',
-  revealFile: 'povsync:revealFile',
-  getRoster: 'povsync:getRoster',
-  saveRoster: 'povsync:saveRoster',
-  getDefaults: 'povsync:getDefaults',
-  checkTools: 'povsync:checkTools',
-  progress: 'povsync:progress',
-  winMinimize: 'povsync:win:minimize',
-  winMaximize: 'povsync:win:maximize',
-  winClose: 'povsync:win:close',
+  analyze: 'livestreamsync:analyze',
+  download: 'livestreamsync:download',
+  cancel: 'livestreamsync:cancel',
+  exportTimeline: 'livestreamsync:export',
+  pickFolder: 'livestreamsync:pickFolder',
+  openFolder: 'livestreamsync:openFolder',
+  revealFile: 'livestreamsync:revealFile',
+  getRoster: 'livestreamsync:getRoster',
+  saveRoster: 'livestreamsync:saveRoster',
+  getDefaults: 'livestreamsync:getDefaults',
+  checkTools: 'livestreamsync:checkTools',
+  progress: 'livestreamsync:progress',
+  winMinimize: 'livestreamsync:win:minimize',
+  winMaximize: 'livestreamsync:win:maximize',
+  winClose: 'livestreamsync:win:close',
 } as const
 
 export interface DownloadRequest {
@@ -47,8 +47,8 @@ export interface ToolStatus {
   ffmpeg: boolean
 }
 
-/** The API surfaced on `window.povsync` by the preload bridge. */
-export interface PovsyncApi {
+/** The API surfaced on `window.livestreamsync` by the preload bridge. */
+export interface LivestreamSyncApi {
   analyze(input: AnalyzeInput): Promise<Analysis>
   download(req: DownloadRequest): Promise<POVResult[]>
   cancel(): Promise<void>

@@ -55,8 +55,8 @@ let cached: Tools | null = null
 export function resolveTools(bundledDir?: string): Tools {
   if (cached) return cached
   cached = {
-    ytDlp: resolveOne('yt-dlp', 'POVSYNC_YTDLP', bundledDir),
-    ffmpeg: resolveOne('ffmpeg', 'POVSYNC_FFMPEG', bundledDir),
+    ytDlp: resolveOne('yt-dlp', 'LIVESTREAMSYNC_YTDLP', bundledDir),
+    ffmpeg: resolveOne('ffmpeg', 'LIVESTREAMSYNC_FFMPEG', bundledDir),
   }
   return cached
 }

@@ -1,8 +1,8 @@
-import type { PovsyncApi } from '../shared/ipc'
+import type { LivestreamSyncApi } from '../shared/ipc'
 
 declare global {
   interface Window {
-    povsync?: PovsyncApi
+    livestreamsync?: LivestreamSyncApi
   }
 }
 

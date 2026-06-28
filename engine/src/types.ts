@@ -1,4 +1,4 @@
-// Core shared types for the POVsync engine. Framework-agnostic — no Electron/DOM deps.
+// Core shared types for the LivestreamSync engine. Framework-agnostic — no Electron/DOM deps.
 
 export type Platform = 'twitch' | 'youtube'
 export type Quality = 'source' | '1080' | '720'

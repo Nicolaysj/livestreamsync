@@ -208,7 +208,7 @@ function registerIpc() {
   })
 
   ipcMain.handle(CH.getDefaults, async () => {
-    const outDir = join(app.getPath('videos'), 'POVsync')
+    const outDir = join(app.getPath('videos'), 'LivestreamSync')
     allowDir(outDir)
     return { outDir }
   })

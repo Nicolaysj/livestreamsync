@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in POVsync didn't work as expected
+description: Something in LivestreamSync didn't work as expected
 labels: [bug]
 body:
   - type: markdown
@@ -8,7 +8,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: POVsync version
+      label: LivestreamSync version
       placeholder: e.g. 0.1.0
   - type: input
     id: windows
@@ -37,7 +37,7 @@ body:
     id: skip-reason
     attributes:
       label: Per-streamer status / skip reason (if relevant)
-      description: If a streamer was skipped, paste the reason POVsync showed.
+      description: If a streamer was skipped, paste the reason LivestreamSync showed.
   - type: textarea
     id: extra
     attributes:

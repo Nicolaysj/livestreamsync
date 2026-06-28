@@ -14,7 +14,7 @@ release/
 
 # Local run output / test artifacts
 test-out*/
-povsync-output/
+livestreamsync-output/
 
 # Tauri / Rust
 src-tauri/target/

@@ -1,6 +1,6 @@
 # Multi-POV Twitch + YouTube VOD Sync & Download — Buildable Design Doc
 
-**Codename:** POVsync · **Owner:** technical (Node/JS, Docker, Cloudflare) · **Audience:** ~3–5 non-technical video editors · **Platform:** Windows-first, macOS planned · **Date:** 2026-06-25
+**Codename:** LivestreamSync · **Owner:** technical (Node/JS, Docker, Cloudflare) · **Audience:** ~3–5 non-technical video editors · **Platform:** Windows-first, macOS planned · **Date:** 2026-06-25
 
 > [!NOTE]
 > **This is the original design/vision document, not a description of the shipped app.**
@@ -313,7 +313,7 @@ function durSec(d){const m=/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/.exec(d||'')||[];r
 <!DOCTYPE xmeml>
 <xmeml version="5">
  <sequence id="seq-1">
-  <name>QuarterJade_collab_2026-06-24_POVsync</name>
+  <name>QuarterJade_collab_2026-06-24_LivestreamSync</name>
   <duration>55740</duration>                <!-- 15m29s @ 60fps -->
   <rate><timebase>60</timebase><ntsc>FALSE</ntsc></rate>
   <media><video>
@@ -325,7 +325,7 @@ function durSec(d){const m=/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/.exec(d||'')||[];r
      <rate><timebase>60</timebase><ntsc>FALSE</ntsc></rate>
      <start>0</start><end>55740</end><in>0</in><out>55740</out>
      <file id="f-1"><name>QuarterJade_POV.mp4</name>
-       <pathurl>file://localhost/C:/POVsync/QuarterJade_POV.mp4</pathurl>
+       <pathurl>file://localhost/C:/LivestreamSync/QuarterJade_POV.mp4</pathurl>
        <rate><timebase>60</timebase><ntsc>FALSE</ntsc></rate><duration>55740</duration></file>
    </clipitem></track>
    <!-- TRACK 3: LilyPichu went live 5s into the window → 300-frame leading gap -->
@@ -333,7 +333,7 @@ function durSec(d){const m=/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/.exec(d||'')||[];r
      <rate><timebase>60</timebase><ntsc>FALSE</ntsc></rate>
      <start>300</start><end>55740</end><in>0</in><out>55440</out>
      <file id="f-3"><name>LilyPichu_POV.mp4</name>
-       <pathurl>file://localhost/C:/POVsync/LilyPichu_POV.mp4</pathurl>
+       <pathurl>file://localhost/C:/LivestreamSync/LilyPichu_POV.mp4</pathurl>
        <rate><timebase>60</timebase><ntsc>FALSE</ntsc></rate><duration>55440</duration></file>
    </clipitem></track>
   </video></media>
@@ -408,7 +408,7 @@ function writeTwitchCookies(path, authToken){
 
 **macOS (when it ships):** $99/yr Apple Developer Program → Developer ID signing (hardened runtime) + **notarytool** notarization + staple. No cheaper way past Gatekeeper (Sequoia removed the right-click-Open bypass). Tauri does this in CI via Apple env vars.
 
-**Toolchain bundling:** **ffmpeg bundled** (stable). **yt-dlp download-on-first-run** to `%LOCALAPPDATA%/POVsync/Tools/`, pinned by SHA-256 in a hosted `tools-manifest.json`, with an in-app "Update tools" button. This keeps the signed installer tiny, lets you push a new yt-dlp **within minutes** when Twitch breaks it *without re-signing/re-releasing the app*, and (on macOS) keeps the frequently-changing binary outside the notarized `.app` so it never breaks notarization.
+**Toolchain bundling:** **ffmpeg bundled** (stable). **yt-dlp download-on-first-run** to `%LOCALAPPDATA%/LivestreamSync/Tools/`, pinned by SHA-256 in a hosted `tools-manifest.json`, with an in-app "Update tools" button. This keeps the signed installer tiny, lets you push a new yt-dlp **within minutes** when Twitch breaks it *without re-signing/re-releasing the app*, and (on macOS) keeps the frequently-changing binary outside the notarized `.app` so it never breaks notarization.
 
 **Net cost (polished):** ~$120/yr Win (Artifact Signing, needs a business) **or** ~$200/yr (individual OV) + $99/yr macOS.
 
@@ -431,7 +431,7 @@ This is legitimate internal creator tooling on the team's own/collab content —
 ## 11. Phased Build Roadmap
 
 **v0 — Headless engine (CLI).** *~1–1.5 wks.*
-Scope: handle→VOD discovery (yt-dlp `-J` GraphQL primary), containment matcher, **PDT-based sync (Layer 1)**, padded `--download-sections` download, edge-case classification. Deliverable: `povsync <anchor-url> <start> <end> --roster file.json` → folder of aligned clips + a `sync.json`. This is the proven manual workflow, automated. *De-risks the whole product.*
+Scope: handle→VOD discovery (yt-dlp `-J` GraphQL primary), containment matcher, **PDT-based sync (Layer 1)**, padded `--download-sections` download, edge-case classification. Deliverable: `livestreamsync <anchor-url> <start> <end> --roster file.json` → folder of aligned clips + a `sync.json`. This is the proven manual workflow, automated. *De-risks the whole product.*
 
 **v1 — GUI MVP.** *~2–3 wks.*
 Scope: Tauri 2 shell, sidecar bundling (ffmpeg) + yt-dlp first-run download, screens 1–3 (New Job → Auto-detect roster → **Sync Preview**) + live download progress. JSON-progress bars. Roster presets + manual add. Friendly error states. Deliverable: usable app for the editors; **no signing yet** (run-anyway note).

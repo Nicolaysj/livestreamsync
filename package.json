@@ -1,5 +1,5 @@
 {
-  "name": "povsync",
+  "name": "livestreamsync",
   "version": "0.1.0",
   "private": true,
   "description": "Multi-POV Twitch + YouTube VOD sync & download tool for video editors",
@@ -7,11 +7,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Nicolaysj/povsync.git"
+    "url": "git+https://github.com/Nicolaysj/livestreamsync.git"
   },
-  "homepage": "https://github.com/Nicolaysj/povsync#readme",
+  "homepage": "https://github.com/Nicolaysj/livestreamsync#readme",
   "bugs": {
-    "url": "https://github.com/Nicolaysj/povsync/issues"
+    "url": "https://github.com/Nicolaysj/livestreamsync/issues"
   },
   "type": "module",
   "main": "dist-electron/main.cjs",
@@ -54,8 +54,8 @@
     "esbuild": "^0.25.0"
   },
   "build": {
-    "appId": "live.nixolay.povsync",
-    "productName": "POVsync",
+    "appId": "live.nixolay.livestreamsync",
+    "productName": "LivestreamSync",
     "files": [
       "dist/**",
       "dist-electron/**",

@@ -1,6 +1,6 @@
 # Security posture
 
-POVsync runs untrusted *remote* data (Twitch/YouTube metadata, VODs) through bundled
+LivestreamSync runs untrusted *remote* data (Twitch/YouTube metadata, VODs) through bundled
 `yt-dlp` + `ffmpeg`, inside an Electron shell. The threat model and the controls:
 
 ## Process execution

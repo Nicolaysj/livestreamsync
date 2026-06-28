@@ -1,30 +1,30 @@
 <div align="center">
 
-# POVsync
+# LivestreamSync
 
 ### Grab every angle, perfectly synced.
 
-One VOD link, one time range, your streamer list — POVsync finds and downloads
+One VOD link, one time range, your streamer list — LivestreamSync finds and downloads
 each collaborator's **time-aligned multi-POV clip**, plus a **ready-to-edit
 Premiere / Resolve timeline** you drop straight into your edit.
 
 <br>
 
-<a href="https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe">
-  <img src="https://img.shields.io/badge/⬇%20Download%20for%20Windows-POVsync-7c3aed?style=for-the-badge&logo=windows&logoColor=white" alt="Download POVsync for Windows" height="46">
+<a href="https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe">
+  <img src="https://img.shields.io/badge/⬇%20Download%20for%20Windows-LivestreamSync-9e5300?style=for-the-badge&logo=windows&logoColor=white" alt="Download LivestreamSync for Windows" height="46">
 </a>
 
 <sub>Windows 10/11 · free & open source · installs everything it needs · no account required</sub>
 
 <br><br>
 
-[![Latest release](https://img.shields.io/github/v/release/Nicolaysj/povsync?label=latest&color=7c3aed)](https://github.com/Nicolaysj/povsync/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/Nicolaysj/povsync/total?color=7c3aed)](https://github.com/Nicolaysj/povsync/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/Nicolaysj/livestreamsync?label=latest&color=9e5300)](https://github.com/Nicolaysj/livestreamsync/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Nicolaysj/livestreamsync/total?color=9e5300)](https://github.com/Nicolaysj/livestreamsync/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-9e5300)](LICENSE)
 
 <br>
 
-<img src="docs/screenshots/02-review.png" alt="POVsync sync preview — every POV aligned to the same moment" width="760">
+<img src="docs/screenshots/02-review.png" alt="LivestreamSync sync preview — every POV aligned to the same moment" width="760">
 
 </div>
 
@@ -36,7 +36,7 @@ You're editing a collab, a watch party, a podcast, a raid — anything where sev
 people streamed the **same moment** from their own POV. Normally you'd hunt down each
 person's VOD, scrub to find the exact spot, trim it, and line everything up by hand.
 
-POVsync does all of that for you. Give it:
+LivestreamSync does all of that for you. Give it:
 
 1. **One anchor VOD** — a single streamer's Twitch or YouTube recording.
 2. **A start and stop time** in that anchor's own timeline (e.g. `04:40:21 → 04:55:50`).
@@ -53,14 +53,14 @@ them in a folder — with an optional timeline you import straight into your edi
 
 | | |
 |---|---|
-| **1. Download & install** | [Grab the installer](https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe). It sets up in one click and opens POVsync — nothing else to install. |
+| **1. Download & install** | [Grab the installer](https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe). It sets up in one click and opens LivestreamSync — nothing else to install. |
 | **2. Fill in three things** | Paste the anchor VOD URL, type your start/stop times, and add the streamers you want. Pick a quality and a folder. Hit **Find POVs**. |
 | **3. Review & download** | See exactly how each angle lines up, untick anyone you don't need, and click **Download clips**. Tick *Export synced timeline* to get a Premiere/Resolve project too. |
 
 <div align="center">
-<img src="docs/screenshots/01-setup.png" alt="POVsync setup screen" width="32%">
-<img src="docs/screenshots/03-downloading.png" alt="POVsync downloading clips" width="32%">
-<img src="docs/screenshots/04-done.png" alt="POVsync finished — clips ready" width="32%">
+<img src="docs/screenshots/01-setup.png" alt="LivestreamSync setup screen" width="32%">
+<img src="docs/screenshots/03-downloading.png" alt="LivestreamSync downloading clips" width="32%">
+<img src="docs/screenshots/04-done.png" alt="LivestreamSync finished — clips ready" width="32%">
 </div>
 
 ## Why it's nice
@@ -75,7 +75,7 @@ them in a folder — with an optional timeline you import straight into your edi
 
 ## How the sync works
 
-POVsync lines clips up by **wall-clock time** — the real-world moment each VOD was being
+LivestreamSync lines clips up by **wall-clock time** — the real-world moment each VOD was being
 streamed. Twitch matches are tight (anchored on the broadcast's publish time); YouTube
 matches are coarser and flagged with a `~` in the app, since YouTube only exposes an
 approximate start time. There's no manual nudging and no audio-waveform step — it's all
@@ -83,7 +83,7 @@ driven by each platform's own timestamps, which is what makes mixed Twitch + You
 timelines line up.
 
 The result is a folder of trimmed `.mp4` clips (padded a few seconds on each side) plus,
-optionally, a single `POVsync_timeline.xml` you import into your NLE.
+optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
 
 ## Requirements & notes
 
@@ -91,7 +91,7 @@ optionally, a single `POVsync_timeline.xml` you import into your NLE.
 - **SmartScreen:** the app isn't code-signed yet, so Windows may show a blue
   *"Windows protected your PC"* prompt on first run. Click **More info → Run anyway**.
   Code signing is planned — see the [roadmap](DESIGN.md).
-- **Responsible use.** POVsync is an editing tool for creators working with their own and
+- **Responsible use.** LivestreamSync is an editing tool for creators working with their own and
   their collaborators' content. It respects platform authentication (no DRM or entitlement
   bypass — subscriber-only content is skipped, not cracked) and keeps everything local. You
   are responsible for having the rights to anything you download, edit, and publish.
@@ -101,7 +101,7 @@ optionally, a single `POVsync_timeline.xml` you import into your NLE.
 
 ## For developers
 
-POVsync is open source (MIT) and contributions are welcome.
+LivestreamSync is open source (MIT) and contributions are welcome.
 
 - **Build it, run it, contribute:** see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 - **Architecture & roadmap:** see **[DESIGN.md](DESIGN.md)**.
@@ -117,4 +117,4 @@ npm run dev        # the full Electron app, hot-reload
 npm run dev:web    # just the UI in a browser (uses a built-in mock)
 ```
 
-Found a bug or want a feature? [Open an issue](https://github.com/Nicolaysj/povsync/issues).
+Found a bug or want a feature? [Open an issue](https://github.com/Nicolaysj/livestreamsync/issues).

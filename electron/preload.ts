@@ -1,8 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { CH, type PovsyncApi } from '../shared/ipc.js'
+import { CH, type LivestreamSyncApi } from '../shared/ipc.js'
 import type { ProgressEvent } from '../engine/src/types'
 
-const api: PovsyncApi = {
+const api: LivestreamSyncApi = {
   analyze: (input) => ipcRenderer.invoke(CH.analyze, input),
   download: (req) => ipcRenderer.invoke(CH.download, req),
   cancel: () => ipcRenderer.invoke(CH.cancel),
@@ -24,4 +24,4 @@ const api: PovsyncApi = {
   close: () => ipcRenderer.send(CH.winClose),
 }
 
-contextBridge.exposeInMainWorld('povsync', api)
+contextBridge.exposeInMainWorld('livestreamsync', api)

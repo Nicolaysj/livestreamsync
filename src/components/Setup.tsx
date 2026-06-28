@@ -46,7 +46,7 @@ export function Setup({
   const canRun = form.anchorUrl.trim() && form.start.trim() && form.stop.trim() && form.handles.length > 0
 
   const pickFolder = async () => {
-    const dir = await window.povsync?.pickFolder?.()
+    const dir = await window.livestreamsync?.pickFolder?.()
     if (dir) set('outDir', dir)
   }
 
@@ -58,7 +58,7 @@ export function Setup({
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-ink">Grab every angle, perfectly synced.</h1>
         <p className="mt-1.5 text-sm text-muted">
-          One VOD, one time range, your streamer list — POVsync finds and downloads each synced clip.
+          One VOD, one time range, your streamer list — LivestreamSync finds and downloads each synced clip.
         </p>
       </div>
 

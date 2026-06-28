@@ -74,6 +74,7 @@
       "target": [
         "nsis"
       ],
+      "icon": "build/resources/icon.ico",
       "artifactName": "${productName}-Setup.${ext}"
     },
     "nsis": {

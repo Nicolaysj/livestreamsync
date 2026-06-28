@@ -1,0 +1,41 @@
+POVsync — third-party components
+================================
+
+POVsync itself is licensed under the MIT License (see LICENSE).
+
+The POVsync application invokes the tools below as **separate executables** (via
+child-process calls), and the Windows installer redistributes verified copies of them.
+Each retains its own license; bundling them does not change POVsync's own MIT license.
+
+
+yt-dlp
+------
+  Role:    media discovery and sliced downloading
+  License: The Unlicense (public domain)
+  Source:  https://github.com/yt-dlp/yt-dlp
+  The yt-dlp binary is fetched and SHA-256-verified at package time (build/fetch-tools.mjs).
+
+
+FFmpeg
+------
+  Role:    trimming and remuxing downloaded segments
+  License: GNU General Public License v3 (the bundled build is a GPL build)
+  Source:  https://ffmpeg.org  ·  Windows build: https://www.gyan.dev/ffmpeg/builds/
+  The complete corresponding source for FFmpeg is available from the FFmpeg project and
+  from the build provider above. The FFmpeg binary is fetched and SHA-256-verified at
+  package time and is invoked as a standalone executable; it is not linked into POVsync.
+
+
+Electron
+--------
+  Role:    desktop application shell
+  License: MIT
+  Source:  https://github.com/electron/electron
+
+
+Other dependencies
+------------------
+  POVsync's renderer and engine use open-source npm packages (React, Vite, TailwindCSS,
+  framer-motion, lucide-react, zod, esbuild, tsx, and others), each under its own
+  permissive license (MIT / ISC / Apache-2.0). See each package's entry in node_modules
+  for its full license text.

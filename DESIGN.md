@@ -2,6 +2,17 @@
 
 **Codename:** POVsync · **Owner:** technical (Node/JS, Docker, Cloudflare) · **Audience:** ~3–5 non-technical video editors · **Platform:** Windows-first, macOS planned · **Date:** 2026-06-25
 
+> [!NOTE]
+> **This is the original design/vision document, not a description of the shipped app.**
+> Some parts describe an earlier or planned direction and are **not** what currently ships:
+> - The app is built on **Electron**, not Tauri.
+> - Sync is **wall-clock/timestamp-based only**. Audio fine-sync (GCC-PHAT), the Cloudflare
+>   Worker / Twitch Helix fallback, ProRes/DNxHR transcode, and the Resolve Multicam helper
+>   are **not implemented** — they're ideas/roadmap.
+>
+> For what actually ships today, see the [README](README.md); for how to build it, see
+> [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ---
 
 ## 1. Executive Summary

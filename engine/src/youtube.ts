@@ -1,6 +1,7 @@
 // YouTube provider: discovery via yt-dlp. Anchors on `release_timestamp` (the true
-// broadcast start; validated against start+duration≈end), trust = 'coarse' so the
-// downstream audio fine-sync owns final alignment for YouTube/mixed timelines.
+// broadcast start; validated against start+duration≈end), trust = 'coarse' because
+// YouTube only exposes an approximate start time — coarse matches are flagged with a
+// leading '~' in the UI. (A future audio fine-sync stage is roadmap-only; see DESIGN.md.)
 
 import type { Tools } from './tools.js'
 import { run } from './exec.js'

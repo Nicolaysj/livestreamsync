@@ -1,0 +1,46 @@
+name: Release
+
+# Cut a release by pushing a version tag:
+#   npm version 0.1.0 --no-git-tag-version   # bump package.json if needed
+#   git tag v0.1.0 && git push origin v0.1.0
+# This builds the Windows installer and publishes it as a GitHub Release asset,
+# so https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe
+# always points at the newest build.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run package
+        env:
+          # We don't code-sign yet; disabling cert auto-discovery keeps electron-builder
+          # from trying to sign with an ambient certificate on the runner.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/POVsync-Setup.exe
+            release/*.blockmap
+            release/latest.yml
+          generate_release_notes: true
+          fail_on_unmatched_files: false

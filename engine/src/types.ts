@@ -41,7 +41,7 @@ export interface ResolvedSegment {
   offsetSec: number // where the window begins inside THIS vod (clamped >= 0)
   windowLenSec: number // length of the slice to download
   leadingGapSec: number // if they went live mid-window, seconds before they appear
-  trust: 'tight' | 'coarse' // twitch=tight, youtube=coarse (needs audio fine-sync)
+  trust: 'tight' | 'coarse' // twitch=tight; youtube=coarse (approx. start time, shown with '~')
   subOnly: boolean
 }
 

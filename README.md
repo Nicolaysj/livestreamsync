@@ -1,72 +1,120 @@
+<div align="center">
+
 # POVsync
 
-Turn **one** anchor stream VOD + a timestamp range into a folder of **perfectly time-aligned multi-POV clips** from every collaborator who was live in that same wall-clock window — plus a **pre-synced Premiere/Resolve timeline** you drop straight into your edit.
+### Grab every angle, perfectly synced.
 
-> Status: **working Windows app (Electron).** Sync engine, CLI, and the full GUI are built and verified end-to-end; two security + bug analysis rounds passed (see [SECURITY.md](SECURITY.md)). Architecture/UX/roadmap in [DESIGN.md](DESIGN.md).
+One VOD link, one time range, your streamer list — POVsync finds and downloads
+each collaborator's **time-aligned multi-POV clip**, plus a **ready-to-edit
+Premiere / Resolve timeline** you drop straight into your edit.
+
+<br>
+
+<a href="https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe">
+  <img src="https://img.shields.io/badge/⬇%20Download%20for%20Windows-POVsync-7c3aed?style=for-the-badge&logo=windows&logoColor=white" alt="Download POVsync for Windows" height="46">
+</a>
+
+<sub>Windows 10/11 · free & open source · installs everything it needs · no account required</sub>
+
+<br><br>
+
+[![Latest release](https://img.shields.io/github/v/release/Nicolaysj/povsync?label=latest&color=7c3aed)](https://github.com/Nicolaysj/povsync/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/Nicolaysj/povsync/total?color=7c3aed)](https://github.com/Nicolaysj/povsync/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-7c3aed)](LICENSE)
+
+<br>
+
+<img src="docs/screenshots/02-review.png" alt="POVsync sync preview — every POV aligned to the same moment" width="760">
+
+</div>
+
+---
 
 ## What it does
 
-Give it three things:
+You're editing a collab, a watch party, a podcast, a raid — anything where several
+people streamed the **same moment** from their own POV. Normally you'd hunt down each
+person's VOD, scrub to find the exact spot, trim it, and line everything up by hand.
 
-1. **Anchor stream URL** — one streamer's POV (Twitch or YouTube).
-2. **Start / Stop** — the segment, in the anchor's own timeline (e.g. `04:40:21 → 04:55:50`).
-3. **Streamers to sync** — a list of handles / channels.
+POVsync does all of that for you. Give it:
 
-It finds each streamer's VOD that was live during that same wall-clock window, downloads **only that segment at max quality**, aligned to the anchor, and writes a folder of clips ready to stack.
+1. **One anchor VOD** — a single streamer's Twitch or YouTube recording.
+2. **A start and stop time** in that anchor's own timeline (e.g. `04:40:21 → 04:55:50`).
+3. **A list of streamers** who were live at the same time.
 
-A streamer who wasn't live, kept no VOD, or is sub/members-only is reported **per-streamer** with a clear reason — it never breaks the run; the rest still download.
+It finds each person's VOD that was live during that same real-world window, downloads
+**only that slice** at the quality you pick, lines every clip up to the anchor, and drops
+them in a folder — with an optional timeline you import straight into your editor.
 
-## How it works (short version)
+> A streamer who wasn't live, kept no VOD, or is subscriber-only is reported with a clear
+> reason and simply skipped. One miss never breaks the run — the rest still download.
 
-- **Sync:** anchor on the HLS `EXT-X-PROGRAM-DATE-TIME` wall-clock map (disconnect-immune), with an optional GCC-PHAT **audio fine-sync** that aligns shared voice-call audio to the frame — the same layer that makes mixed Twitch + YouTube timelines trustworthy.
-- **Discovery + download:** bundled `yt-dlp` + `ffmpeg`; `--download-sections` fetches only the needed fragments. An optional Cloudflare Worker proxies the official Twitch Helix API so no API secret ships in the app.
-- **Export:** hand-generated FCP7-XML (xmeml) places every POV on its own track at the correct frame offset in **both** Premiere and Resolve.
+## Get started in 3 steps
 
-## Platforms
-
-Twitch and YouTube live behind a shared **`Provider`** abstraction (people-centric roster: one collaborator can carry a Twitch handle *and/or* a YouTube channel).
-
-## Stack
-
-Tauri 2 (Rust shell + TypeScript/React UI) · bundled `ffmpeg` · auto-updating `yt-dlp` · optional Cloudflare Worker.
-
-## Roadmap
-
-| Phase | Scope |
+| | |
 |---|---|
-| **v0** | Headless engine (CLI): discovery → PDT sync → sliced download → folder + `sync.json` |
-| **v1** | GUI MVP — New Job → Auto-detect roster → Sync Preview + live progress |
-| **v2** | FCP7-XML export · smart roster · audio fine-sync · sub-only/members auth · **YouTube provider** · ProRes transcode |
-| **v3** | Code signing · auto-update · polish (macOS to follow) |
+| **1. Download & install** | [Grab the installer](https://github.com/Nicolaysj/povsync/releases/latest/download/POVsync-Setup.exe). It sets up in one click and opens POVsync — nothing else to install. |
+| **2. Fill in three things** | Paste the anchor VOD URL, type your start/stop times, and add the streamers you want. Pick a quality and a folder. Hit **Find POVs**. |
+| **3. Review & download** | See exactly how each angle lines up, untick anyone you don't need, and click **Download clips**. Tick *Export synced timeline* to get a Premiere/Resolve project too. |
 
-## Develop & build
+<div align="center">
+<img src="docs/screenshots/01-setup.png" alt="POVsync setup screen" width="32%">
+<img src="docs/screenshots/03-downloading.png" alt="POVsync downloading clips" width="32%">
+<img src="docs/screenshots/04-done.png" alt="POVsync finished — clips ready" width="32%">
+</div>
 
-Requires Node 20+. In development the engine uses the `yt-dlp` / `ffmpeg` on your PATH;
-packaging bundles verified copies into the app.
+## Why it's nice
+
+- **Twitch *and* YouTube** — mix both in one job. A collaborator can carry a Twitch handle, a YouTube channel, or both.
+- **Only downloads what you need** — it fetches just your time slice at Source / 1080p / 720p, so it's fast even on multi-hour VODs.
+- **Nothing else to install** — a verified copy of `yt-dlp` and `ffmpeg` ships inside the app.
+- **See the sync before you commit** — a visual lane chart shows where every POV lines up, who joined late, and who has no coverage.
+- **One miss doesn't sink the run** — each streamer downloads independently with live progress and speed; failures are reported, not fatal.
+- **Drop-in timeline** — optional FCP7-XML export puts every angle on its own track at the right offset, and imports into **both** Adobe Premiere Pro and DaVinci Resolve.
+- **Remembers your crew** — save frequent collaborators to a roster and add them with one click.
+
+## How the sync works
+
+POVsync lines clips up by **wall-clock time** — the real-world moment each VOD was being
+streamed. Twitch matches are tight (anchored on the broadcast's publish time); YouTube
+matches are coarser and flagged with a `~` in the app, since YouTube only exposes an
+approximate start time. There's no manual nudging and no audio-waveform step — it's all
+driven by each platform's own timestamps, which is what makes mixed Twitch + YouTube
+timelines line up.
+
+The result is a folder of trimmed `.mp4` clips (padded a few seconds on each side) plus,
+optionally, a single `POVsync_timeline.xml` you import into your NLE.
+
+## Requirements & notes
+
+- **Windows 10 or 11.** (macOS isn't built yet — it's on the roadmap.)
+- **SmartScreen:** the app isn't code-signed yet, so Windows may show a blue
+  *"Windows protected your PC"* prompt on first run. Click **More info → Run anyway**.
+  Code signing is planned — see the [roadmap](DESIGN.md).
+- **Responsible use.** POVsync is an editing tool for creators working with their own and
+  their collaborators' content. It respects platform authentication (no DRM or entitlement
+  bypass — subscriber-only content is skipped, not cracked) and keeps everything local. You
+  are responsible for having the rights to anything you download, edit, and publish.
+  Not affiliated with Twitch, YouTube, or any streamer.
+
+---
+
+## For developers
+
+POVsync is open source (MIT) and contributions are welcome.
+
+- **Build it, run it, contribute:** see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+- **Architecture & roadmap:** see **[DESIGN.md](DESIGN.md)**.
+- **Security model:** see **[SECURITY.md](SECURITY.md)**.
+
+**Stack:** Electron + Vite + React + TypeScript, with a headless TypeScript engine that
+also runs from a CLI. Bundled `ffmpeg` and auto-updating `yt-dlp`. Third-party
+components are listed in [NOTICE](NOTICE).
 
 ```bash
 npm install
-npm run dev        # Electron app, hot-reload renderer
-npm run dev:web    # renderer only, in a browser (fast UI iteration)
-npm start          # run the built app (electron .)
-npm run typecheck  # tsc --noEmit
-
-# Headless v0 engine (the GUI drives this same engine):
-npm run cli -- "https://www.twitch.tv/videos/<id>" 04:40:21 04:55:50 --streamers pokimane,lilypichu --xml
-
-# Package the Windows app (downloads + SHA-256-verifies yt-dlp & ffmpeg, then builds):
-npm run package    # -> release/  (NSIS installer)
+npm run dev        # the full Electron app, hot-reload
+npm run dev:web    # just the UI in a browser (uses a built-in mock)
 ```
 
-The packaged app resolves its bundled tools from `resources/tools`; in dev it falls back
-to your PATH. **Installer note:** `electron-builder` extracts a `winCodeSign` cache that
-contains macOS symlinks; on Windows, creating those needs **Developer Mode** (Settings →
-Privacy & security → For developers) or an elevated shell. With it enabled, `npm run
-package` produces the installer; the app itself runs without it via `npm run dev` / the
-unpacked build.
-
-## Responsible use
-
-An internal editing tool for creators working with their own and collaborators' content. It respects platform authentication (no DRM or entitlement bypass — sub/members-only uses your own login), caches metadata only briefly, and keeps downloads local. You are responsible for having the rights to any content you edit and publish.
-
-Not affiliated with Twitch, YouTube, or any streamer.
+Found a bug or want a feature? [Open an issue](https://github.com/Nicolaysj/povsync/issues).

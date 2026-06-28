@@ -4,7 +4,15 @@
   "private": true,
   "description": "Multi-POV Twitch + YouTube VOD sync & download tool for video editors",
   "author": "Nicolay Schiøll-Johansen",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nicolaysj/povsync.git"
+  },
+  "homepage": "https://github.com/Nicolaysj/povsync#readme",
+  "bugs": {
+    "url": "https://github.com/Nicolaysj/povsync/issues"
+  },
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -66,12 +74,13 @@
       "target": [
         "nsis"
       ],
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup.${ext}"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "perMachine": false
+      "oneClick": true,
+      "perMachine": false,
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   }
 }

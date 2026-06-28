@@ -1,16 +1,16 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="bg" x1="120" y1="60" x2="940" y2="1000" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#A78BFA"/>
-      <stop offset="0.48" stop-color="#7C3AED"/>
-      <stop offset="1" stop-color="#5B21B6"/>
+      <stop offset="0" stop-color="#F0C079"/>
+      <stop offset="0.48" stop-color="#E09036"/>
+      <stop offset="1" stop-color="#9E5300"/>
     </linearGradient>
     <radialGradient id="glow" cx="0.5" cy="0.04" r="0.85">
       <stop offset="0" stop-color="#ffffff" stop-opacity="0.20"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
     <filter id="shadow" x="-25%" y="-25%" width="150%" height="160%">
-      <feDropShadow dx="0" dy="16" stdDeviation="26" flood-color="#1b0a40" flood-opacity="0.45"/>
+      <feDropShadow dx="0" dy="16" stdDeviation="26" flood-color="#3a1e05" flood-opacity="0.42"/>
     </filter>
   </defs>
   <rect x="0" y="0" width="1024" height="1024" rx="232" fill="url(#bg)"/>
@@ -19,6 +19,6 @@
     <rect x="232.5" y="426"   width="365.5" height="279.5" rx="64.5" fill="#ffffff" opacity="0.30"/>
     <rect x="329.25" y="372.25" width="365.5" height="279.5" rx="64.5" fill="#ffffff" opacity="0.58"/>
     <rect x="426"   y="318.5" width="365.5" height="279.5" rx="64.5" fill="#ffffff"/>
-    <path d="M555 393.75 L705.5 458.25 L555 522.75 Z" fill="#7C3AED"/>
+    <path d="M555 393.75 L705.5 458.25 L555 522.75 Z" fill="#9E5300"/>
   </g>
 </svg>

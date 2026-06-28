@@ -51,11 +51,11 @@ export function StreamerInput({
         {handles.map((h) => (
           <span
             key={h}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-white/[0.06] py-1 pl-2 pr-1 text-sm text-ink"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-bg-2 py-1 pl-2 pr-1 text-sm text-ink"
           >
             <PlatformIcon platform={inferPlatform(h)} className="h-3.5 w-3.5" />
             {h}
-            <button onClick={() => remove(h)} className="rounded p-0.5 text-faint hover:bg-white/10 hover:text-ink">
+            <button onClick={() => remove(h)} className="rounded p-0.5 text-faint hover:bg-border-2 hover:text-ink">
               <X className="h-3 w-3" />
             </button>
           </span>

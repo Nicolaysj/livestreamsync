@@ -52,13 +52,13 @@ export function Review({
                 className={clsx(
                   'no-drag flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition-all',
                   can ? 'cursor-pointer hover:border-accent/40' : 'cursor-default opacity-60',
-                  p.selected && can ? 'border-accent/50 bg-accent/[0.06]' : 'border-border bg-panel/40',
+                  p.selected && can ? 'border-accent-line bg-accent-soft/40' : 'border-border bg-panel',
                 )}
               >
                 <span
                   className={clsx(
                     'flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors',
-                    p.selected && can ? 'border-accent bg-accent text-white' : 'border-border-2',
+                    p.selected && can ? 'border-accent-strong bg-accent-strong text-accent-ink' : 'border-border-2',
                     !can && 'opacity-0',
                   )}
                 >

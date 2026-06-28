@@ -43,12 +43,17 @@ export function SyncTimeline({ povs, lengthSec }: { povs: POVResult[]; lengthSec
                     className={clsx(
                       'absolute inset-y-0 rounded-md',
                       p.status === 'partial'
-                        ? 'bg-gradient-to-r from-warn/70 to-warn/40'
-                        : 'bg-gradient-to-r from-accent to-accent-2',
+                        ? 'bg-accent-soft border border-accent-line'
+                        : 'bg-accent-strong',
                     )}
                     style={{ left: `${leadFrac * 100}%`, width: `${Math.max(2, lenFrac * 100)}%` }}
                   >
-                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-white/90">
+                    <span
+                      className={clsx(
+                        'absolute inset-0 flex items-center justify-center text-[10px] font-medium',
+                        p.status === 'partial' ? 'text-accent-text' : 'text-accent-ink',
+                      )}
+                    >
                       {seg.trust === 'coarse' ? '~ ' : ''}
                       {p.status === 'partial' ? 'partial' : 'in sync'}
                     </span>

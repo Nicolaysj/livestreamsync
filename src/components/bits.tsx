@@ -6,10 +6,10 @@ import { STATUS_META, TONE_CLASS } from '../lib/format'
 export function Logo({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden>
-      <rect x="3" y="8" width="17" height="13" rx="3" fill="var(--color-accent)" opacity="0.45" />
-      <rect x="7.5" y="5.5" width="17" height="13" rx="3" fill="var(--color-accent-2)" opacity="0.7" />
-      <rect x="12" y="3" width="17" height="13" rx="3" fill="var(--color-accent)" />
-      <path d="M18 6.5 L25 9.5 L18 12.5 Z" fill="white" />
+      <rect x="3" y="8" width="17" height="13" rx="3" fill="var(--color-accent)" opacity="0.4" />
+      <rect x="7.5" y="5.5" width="17" height="13" rx="3" fill="var(--color-accent)" opacity="0.65" />
+      <rect x="12" y="3" width="17" height="13" rx="3" fill="var(--color-accent-strong)" />
+      <path d="M18 6.5 L25 9.5 L18 12.5 Z" fill="var(--color-accent-ink)" />
     </svg>
   )
 }

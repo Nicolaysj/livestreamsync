@@ -1,33 +1,42 @@
 @import 'tailwindcss';
 
-/* ----- POVsync theme: sleek, dark, violet accent ----- */
+/* ----- POVsync · Studio Light: warm, editorial, single amber accent ----- */
 @theme {
-  --color-bg: #0a0a0f;
-  --color-bg-2: #0e0e16;
-  --color-panel: #14141d;
-  --color-panel-2: #1a1a26;
-  --color-border: #262633;
-  --color-border-2: #32324a;
+  /* Neutrals — warm paper to ink (not pure grey) */
+  --color-bg: #fafaf7;        /* paper — app background */
+  --color-bg-2: #f3f1ec;      /* paper-2 — sunken / hover */
+  --color-panel: #ffffff;     /* card — raised surface */
+  --color-panel-2: #f3f1ec;   /* paper-2 — quiet fill */
+  --color-border: #e6e2d8;    /* rule — hairline border */
+  --color-border-2: #d8d2c4;  /* rule-2 — stronger border */
 
-  --color-ink: #ECECF3;
-  --color-muted: #9A9AB0;
-  --color-faint: #62627A;
+  --color-ink: #1b1a17;       /* primary text */
+  --color-muted: #6f6b62;     /* secondary text */
+  --color-faint: #bbb6a9;     /* decoration only */
 
-  --color-accent: #8B5CF6;
-  --color-accent-2: #A78BFA;
-  --color-accent-soft: #6D28D9;
+  /* Accent — amber, one hue in five roles */
+  --color-accent: #e09036;        /* decorative brand amber */
+  --color-accent-2: #945000;      /* AA text / darker gradient stop */
+  --color-accent-soft: #fbe0c1;   /* tint fill */
+  --color-accent-line: #ddae6c;   /* soft border */
+  --color-accent-text: #945000;   /* AA text · 5.9:1 */
+  --color-accent-strong: #9e5300; /* filled-button / filled-bar bg */
+  --color-accent-ink: #fafaf7;    /* text on accent-strong */
 
-  --color-ok: #34D399;
-  --color-warn: #FBBF24;
-  --color-danger: #F87171;
-  --color-info: #60A5FA;
-  --color-twitch: #9146FF;
-  --color-youtube: #FF4D4D;
+  /* Semantic — token + low-chroma "soft" pair */
+  --color-ok: #137738;        --color-ok-soft: #d9f3dd;
+  --color-warn: #905300;      --color-warn-soft: #fdecd1;
+  --color-danger: #b63b39;    --color-danger-soft: #ffe5e1;
+  --color-info: #006aa0;      --color-info-soft: #daeefe;
+  --color-live: #cc2222;      --color-live-soft: #ffe5e1;
 
-  --font-sans: 'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+  --color-twitch: #9146ff;
+  --color-youtube: #ff4d4d;
 
-  --radius: 0.875rem;
+  --font-sans: 'Geist Variable', 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+
+  --radius: 0.75rem;
 }
 
 @layer base {
@@ -44,7 +53,7 @@
     background: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: -0.005em;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     overflow: hidden;
@@ -55,7 +64,8 @@
     user-select: text;
   }
   ::selection {
-    background: color-mix(in oklab, var(--color-accent) 40%, transparent);
+    background: var(--color-accent-soft);
+    color: var(--color-accent-text);
   }
   /* sleek thin scrollbars */
   ::-webkit-scrollbar {
@@ -79,24 +89,24 @@
 
 @layer utilities {
   .glass {
-    background: color-mix(in oklab, var(--color-panel) 86%, transparent);
+    background: color-mix(in oklab, var(--color-panel) 80%, transparent);
     backdrop-filter: blur(12px);
   }
   .ring-accent {
-    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent) 55%, transparent),
-      0 0 28px -6px color-mix(in oklab, var(--color-accent) 60%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-accent-line) 80%, transparent);
   }
   .text-gradient {
-    background: linear-gradient(100deg, var(--color-accent-2), var(--color-accent));
+    background: linear-gradient(100deg, var(--color-accent-strong), var(--color-accent));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
+  /* faint editorial dot grid (depth by tint, not shadow) */
   .grid-fade {
-    background-image: radial-gradient(circle at 1px 1px, var(--color-border) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, var(--color-border-2) 1px, transparent 0);
     background-size: 22px 22px;
-    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
-    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 25%, transparent 72%);
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 25%, transparent 72%);
   }
   .no-drag {
     -webkit-app-region: no-drag;
@@ -106,7 +116,7 @@
   }
 }
 
-/* Subtle entrance + shimmer used by progress bars */
+/* Subtle sheen used by in-progress bars */
 @keyframes shimmer {
   100% {
     transform: translateX(100%);
@@ -116,7 +126,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, color-mix(in oklab, #fff 14%, transparent), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, #fff 35%, transparent), transparent);
   transform: translateX(-100%);
   animation: shimmer 1.6s infinite;
 }

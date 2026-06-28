@@ -75,7 +75,7 @@ export function Progress({
                   <div
                     className={clsx(
                       'absolute inset-y-0 left-0 rounded-full transition-[width] duration-300',
-                      failed ? 'bg-danger/60' : p.outputFile ? 'bg-ok' : 'bg-gradient-to-r from-accent to-accent-2',
+                      failed ? 'bg-danger/70' : p.outputFile ? 'bg-ok' : 'bg-accent-strong',
                     )}
                     style={{ width: `${failed ? 100 : pct}%` }}
                   />
@@ -89,7 +89,7 @@ export function Progress({
                 ) : null}
               </div>
               {p.outputFile && (
-                <button onClick={() => onReveal(p.outputFile!)} className="no-drag rounded-lg p-1.5 text-faint hover:bg-white/10 hover:text-ink" title="Reveal file">
+                <button onClick={() => onReveal(p.outputFile!)} className="no-drag rounded-lg p-1.5 text-faint hover:bg-bg-2 hover:text-ink" title="Reveal file">
                   <FileVideo className="h-4 w-4" />
                 </button>
               )}

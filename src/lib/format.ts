@@ -28,9 +28,9 @@ export const STATUS_META: Record<POVStatus, StatusMeta> = {
 }
 
 export const TONE_CLASS: Record<Tone, { text: string; bg: string; dot: string }> = {
-  ok: { text: 'text-ok', bg: 'bg-ok/10', dot: 'bg-ok' },
-  warn: { text: 'text-warn', bg: 'bg-warn/10', dot: 'bg-warn' },
-  muted: { text: 'text-muted', bg: 'bg-white/5', dot: 'bg-faint' },
-  danger: { text: 'text-danger', bg: 'bg-danger/10', dot: 'bg-danger' },
-  info: { text: 'text-info', bg: 'bg-info/10', dot: 'bg-info' },
+  ok: { text: 'text-ok', bg: 'bg-ok-soft', dot: 'bg-ok' },
+  warn: { text: 'text-warn', bg: 'bg-warn-soft', dot: 'bg-warn' },
+  muted: { text: 'text-muted', bg: 'bg-bg-2', dot: 'bg-faint' },
+  danger: { text: 'text-danger', bg: 'bg-danger-soft', dot: 'bg-danger' },
+  info: { text: 'text-info', bg: 'bg-info-soft', dot: 'bg-info' },
 }

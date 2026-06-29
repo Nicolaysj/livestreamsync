@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { RefreshCw, ChevronDown, ArrowUpCircle, Check, AlertCircle } from 'lucide-react'
+import { RefreshCw, ChevronDown, ArrowUpCircle, Check, AlertCircle, ExternalLink } from 'lucide-react'
 import { clsx } from 'clsx'
 import { api } from '../lib/api'
 import type { UpdateStatus } from '../../shared/ipc'
@@ -67,6 +67,9 @@ function CheckButton() {
 }
 
 function Body({ status }: { status: UpdateStatus }) {
+  // On macOS we can't auto-install (unsigned), so the "Download" action opens the GitHub
+  // release page for a manual update instead of triggering the in-app downloader.
+  const isMac = api.platform === 'darwin'
   switch (status.state) {
     case 'checking':
       return (
@@ -81,7 +84,13 @@ function Body({ status }: { status: UpdateStatus }) {
             <ArrowUpCircle className="h-4 w-4 text-accent-text" /> Version {status.version} is available.
           </p>
           <button onClick={() => api.downloadUpdate()} className={clsx(action, 'bg-accent-strong text-accent-ink hover:brightness-110')}>
-            Download update
+            {isMac ? (
+              <>
+                <ExternalLink className="h-4 w-4" /> Download from GitHub
+              </>
+            ) : (
+              'Download update'
+            )}
           </button>
         </div>
       )

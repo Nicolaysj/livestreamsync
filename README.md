@@ -100,9 +100,11 @@ optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
   ```bash
   xattr -dr com.apple.quarantine /Applications/LivestreamSync.app
   ```
-  Because it's unsigned, the in-app updater is disabled on macOS — "Check for updates" opens
-  the [releases page](https://github.com/Nicolaysj/livestreamsync/releases/latest) instead.
-  Code signing + notarization are planned — see the [roadmap](docs/DESIGN.md).
+  Because it's unsigned, macOS can't auto-*install* updates — but the app still checks GitHub
+  on launch and **notifies you when a newer version ships** (a one-time notification plus a dot
+  on the title-bar updates menu); "Check for updates" then opens the
+  [releases page](https://github.com/Nicolaysj/livestreamsync/releases/latest) to download it.
+  Code signing + notarization (for true in-app updates) are planned — see the [roadmap](docs/DESIGN.md).
 - **Responsible use.** LivestreamSync is an editing tool for creators working with their own and
   their collaborators' content. It respects platform authentication (no DRM or entitlement
   bypass — subscriber-only content is skipped, not cracked) and keeps everything local. You

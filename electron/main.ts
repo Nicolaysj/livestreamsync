@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, session } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell, session, Notification } from 'electron'
 import electronUpdater from 'electron-updater'
 import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -22,11 +22,13 @@ const isMac = process.platform === 'darwin'
 // The yt-dlp binary name differs by OS (no extension on POSIX).
 const YTDLP_BIN = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
 
-// electron-updater (Squirrel.Mac) validates the app's code signature, so it cannot work on
-// our unsigned macOS build — only enable it on Windows. macOS routes "check for updates" to
-// the GitHub releases page instead (see the updateCheck handler).
+// electron-updater (Squirrel.Mac) validates the app's code signature, so the in-app
+// download+install path can't work on our unsigned macOS build — only enable that on Windows.
+// macOS instead does a signing-free GitHub version *check* and notifies the user, who then
+// downloads the new build manually (see checkMacUpdate + the update IPC handlers).
 const UPDATER_ENABLED = !isMac
 const RELEASES_URL = 'https://github.com/Nicolaysj/livestreamsync/releases/latest'
+const RELEASES_API = 'https://api.github.com/repos/Nicolaysj/livestreamsync/releases/latest'
 
 // Directories the user has explicitly chosen (folder picker / default / download target).
 // shell.openPath / showItemInFolder are only allowed for paths inside one of these — a
@@ -102,11 +104,80 @@ async function selfUpdateYtDlp(userTools: string, dest: string): Promise<void> {
   if (process.platform !== 'win32') await chmod(dest, 0o755).catch(() => {})
 }
 
+// ---- macOS update check (signing-free, notify-only) ---------------------------
+// We can't auto-install on an unsigned mac, but we CAN ask GitHub whether a newer release
+// exists and nudge the user to grab it. Pure version comparison, no Squirrel involved.
+function isNewerVersion(remote: string, local: string): boolean {
+  const parts = (v: string) => v.replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0)
+  const r = parts(remote)
+  const l = parts(local)
+  for (let i = 0; i < Math.max(r.length, l.length); i++) {
+    const a = r[i] ?? 0
+    const b = l[i] ?? 0
+    if (a !== b) return a > b
+  }
+  return false
+}
+
+// Show a native OS notification at most once per new version (stamped in userData), so we
+// nudge but never nag. The persistent reminder is the dot in the title-bar updates menu.
+async function notifyNewVersion(version: string): Promise<void> {
+  if (!Notification.isSupported()) return
+  const stamp = join(app.getPath('userData'), '.update-notified')
+  const last = await readFile(stamp, 'utf8').catch(() => '')
+  if (last.trim() === version) return
+  await writeFile(stamp, version, 'utf8').catch(() => {})
+  const n = new Notification({
+    title: `LivestreamSync ${version} is available`,
+    body: 'Click to download the new version from GitHub.',
+  })
+  n.on('click', () => void shell.openExternal(RELEASES_URL))
+  n.show()
+}
+
+/**
+ * Ask GitHub for the latest release and tell the renderer whether one is newer than us.
+ * `fromUser` = a manual "Check for updates" click (show the checking/error states);
+ * on launch we stay quiet on failure and only surface a genuine new version.
+ */
+async function checkMacUpdate(win: BrowserWindow | null, fromUser: boolean): Promise<void> {
+  const send = (s: UpdateStatus) => {
+    if (win && !win.isDestroyed()) win.webContents.send(CH.updateStatus, s)
+  }
+  if (fromUser) send({ state: 'checking' })
+  let latest = ''
+  try {
+    const res = await fetch(RELEASES_API, {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'LivestreamSync-Updater' },
+    })
+    if (res.status === 404) return send({ state: 'none' }) // no releases published yet
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = (await res.json()) as { tag_name?: string }
+    latest = (data.tag_name || '').replace(/^v/, '')
+  } catch (e) {
+    if (fromUser) send({ state: 'error', message: 'Couldn’t reach GitHub to check for updates.' })
+    else if (isDev) console.error('[update:mac]', e)
+    return
+  }
+  if (latest && isNewerVersion(latest, app.getVersion())) {
+    send({ state: 'available', version: latest })
+    if (!fromUser) void notifyNewVersion(latest) // one-time native nudge on launch
+  } else {
+    send({ state: 'none' })
+  }
+}
+
 // ---- in-app auto-update (electron-updater) ------------------------------------
 // "Notify, install on click": check on launch, tell the renderer when an update is
 // available; the user clicks to download, then clicks again to restart & install.
 function setupAutoUpdate(win: BrowserWindow): void {
-  if (!UPDATER_ENABLED || !app.isPackaged) return
+  if (!app.isPackaged) return
+  if (isMac) {
+    // Unsigned mac: no in-app install, but check GitHub on launch and notify (dot + a
+    // one-time native notification) so users know when to grab the new build.
+    setTimeout(() => void checkMacUpdate(win, false), 3000)
+    return
+  }
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
   const send = (s: UpdateStatus) => {
@@ -307,10 +378,8 @@ function registerIpc() {
   ipcMain.handle(CH.getVersion, () => app.getVersion())
   ipcMain.on(CH.updateCheck, (e) => {
     if (isMac) {
-      // Unsigned macOS can't auto-update (Squirrel.Mac needs a signed app) — send the user
-      // to the releases page and report "up to date" so the menu resolves without an error.
-      void shell.openExternal(RELEASES_URL)
-      e.sender.send(CH.updateStatus, { state: 'none' } satisfies UpdateStatus)
+      // Signing-free GitHub version check; surfaces "available" (with the version) or "none".
+      void checkMacUpdate(mainWindow, true)
     } else if (app.isPackaged) {
       autoUpdater.checkForUpdates().catch((err) => isDev && console.error('[update]', err))
     } else {
@@ -319,7 +388,10 @@ function registerIpc() {
     }
   })
   ipcMain.on(CH.updateDownload, () => {
-    if (UPDATER_ENABLED && app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
+    // On mac the "Download" action just opens the releases page (manual install); on Windows
+    // it triggers the real electron-updater download.
+    if (isMac) void shell.openExternal(RELEASES_URL)
+    else if (app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
   })
   ipcMain.on(CH.updateInstall, () => {
     if (UPDATER_ENABLED && app.isPackaged) autoUpdater.quitAndInstall()

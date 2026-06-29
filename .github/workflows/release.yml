@@ -3,9 +3,11 @@ name: Release
 # Cut a release by pushing a version tag:
 #   npm version 0.1.0 --no-git-tag-version   # bump package.json if needed
 #   git tag v0.1.0 && git push origin v0.1.0
-# This builds the Windows installer and publishes it as a GitHub Release asset,
-# so https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe
-# always points at the newest build.
+# This builds the Windows installer AND the macOS (Apple Silicon, unsigned) app and
+# publishes them as GitHub Release assets, so e.g.
+#   …/releases/latest/download/LivestreamSync-Setup.exe
+# always points at the newest build. The macOS build is unsigned (no Apple Developer
+# account) — users must clear the Gatekeeper quarantine on first launch (see README).
 
 on:
   push:
@@ -42,5 +44,36 @@ jobs:
             release/LivestreamSync-Setup.exe
             release/*.blockmap
             release/latest.yml
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+
+  build-mac:
+    # macos-14 is an Apple Silicon (arm64) runner, so it builds the arm64 app natively.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build macOS app (unsigned, arm64)
+        run: npm run package:mac
+        env:
+          # Unsigned build — keep electron-builder from trying to sign with an ambient cert.
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.dmg
+            release/*-arm64.zip
+            release/*.blockmap
+            release/latest-mac.yml
           generate_release_notes: true
           fail_on_unmatched_files: false

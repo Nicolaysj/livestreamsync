@@ -64,6 +64,8 @@ export type UpdateStatus =
 
 /** The API surfaced on `window.livestreamsync` by the preload bridge. */
 export interface LivestreamSyncApi {
+  /** Host OS, so the renderer can adapt chrome (e.g. native traffic lights on macOS). */
+  platform: NodeJS.Platform
   analyze(input: AnalyzeInput): Promise<Analysis>
   download(req: DownloadRequest): Promise<POVResult[]>
   cancel(): Promise<void>

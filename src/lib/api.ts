@@ -57,6 +57,8 @@ function mockAnalysis(input: AnalyzeInput): Analysis {
 let mockProgressCb: ((ev: ProgressEvent) => void) | null = null
 
 const mockApi: LivestreamSyncApi = {
+  // Reflect the dev OS so the browser preview shows the right window chrome.
+  platform: typeof navigator !== 'undefined' && /Mac/i.test(navigator.platform) ? 'darwin' : 'win32',
   analyze: async (input) => {
     await delay(900)
     return mockAnalysis(input)

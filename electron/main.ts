@@ -3,7 +3,7 @@ import electronUpdater from 'electron-updater'
 import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { existsSync } from 'node:fs'
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, copyFile, chmod } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { resolveTools, resetToolCache, isAllowedVodUrl } from '../engine/src/index.js'
 import { analyze, downloadAnalysis, exportTimeline } from '../engine/src/index.js'
@@ -17,6 +17,16 @@ const { autoUpdater } = electronUpdater
 // that undefined in CJS output, which crashes the main process on load.
 declare const __dirname: string
 const isDev = !!process.env.VITE_DEV_SERVER_URL
+const isMac = process.platform === 'darwin'
+
+// The yt-dlp binary name differs by OS (no extension on POSIX).
+const YTDLP_BIN = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
+
+// electron-updater (Squirrel.Mac) validates the app's code signature, so it cannot work on
+// our unsigned macOS build — only enable it on Windows. macOS routes "check for updates" to
+// the GitHub releases page instead (see the updateCheck handler).
+const UPDATER_ENABLED = !isMac
+const RELEASES_URL = 'https://github.com/Nicolaysj/livestreamsync/releases/latest'
 
 // Directories the user has explicitly chosen (folder picker / default / download target).
 // shell.openPath / showItemInFolder are only allowed for paths inside one of these — a
@@ -58,12 +68,15 @@ const ONE_DAY = 24 * 60 * 60 * 1000
 async function ensureYtDlpFresh(): Promise<void> {
   if (!app.isPackaged) return
   const userTools = join(app.getPath('userData'), 'tools')
-  const dest = join(userTools, 'yt-dlp.exe')
-  const bundled = join(process.resourcesPath, 'tools', 'yt-dlp.exe')
+  const dest = join(userTools, YTDLP_BIN)
+  const bundled = join(process.resourcesPath, 'tools', YTDLP_BIN)
   try {
     await mkdir(userTools, { recursive: true })
     if (!existsSync(dest) && existsSync(bundled)) await copyFile(bundled, dest)
     if (existsSync(dest)) {
+      // copyFile preserves mode, but extraResources packaging and the `-U` rewrite can drop
+      // the +x bit — re-assert it on POSIX so spawn never fails with EACCES.
+      if (process.platform !== 'win32') await chmod(dest, 0o755).catch(() => {})
       process.env.LIVESTREAMSYNC_YTDLP = dest // engine resolves this first (tools.ts)
       resetToolCache()
     }
@@ -85,13 +98,15 @@ async function selfUpdateYtDlp(userTools: string, dest: string): Promise<void> {
     child.on('error', () => { clearTimeout(kill); res() })
     child.on('close', () => { clearTimeout(kill); res() })
   })
+  // yt-dlp rewrites its own binary on update, which can reset the mode — re-assert +x.
+  if (process.platform !== 'win32') await chmod(dest, 0o755).catch(() => {})
 }
 
 // ---- in-app auto-update (electron-updater) ------------------------------------
 // "Notify, install on click": check on launch, tell the renderer when an update is
 // available; the user clicks to download, then clicks again to restart & install.
 function setupAutoUpdate(win: BrowserWindow): void {
-  if (!app.isPackaged) return
+  if (!UPDATER_ENABLED || !app.isPackaged) return
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
   const send = (s: UpdateStatus) => {
@@ -123,9 +138,12 @@ function createWindow() {
     minWidth: 900,
     minHeight: 660,
     show: false,
-    frame: false,
     backgroundColor: '#0a0a0f',
-    titleBarStyle: 'hidden',
+    // macOS keeps its native traffic lights ('hiddenInset' hides the OS title bar but not the
+    // controls); Windows is fully frameless and draws its own controls in the custom TitleBar.
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 14, y: 14 } }
+      : { frame: false as const, titleBarStyle: 'hidden' as const }),
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -288,7 +306,12 @@ function registerIpc() {
 
   ipcMain.handle(CH.getVersion, () => app.getVersion())
   ipcMain.on(CH.updateCheck, (e) => {
-    if (app.isPackaged) {
+    if (isMac) {
+      // Unsigned macOS can't auto-update (Squirrel.Mac needs a signed app) — send the user
+      // to the releases page and report "up to date" so the menu resolves without an error.
+      void shell.openExternal(RELEASES_URL)
+      e.sender.send(CH.updateStatus, { state: 'none' } satisfies UpdateStatus)
+    } else if (app.isPackaged) {
       autoUpdater.checkForUpdates().catch((err) => isDev && console.error('[update]', err))
     } else {
       // Dev build can't self-update; tell the renderer it's "up to date" so the menu resolves.
@@ -296,10 +319,10 @@ function registerIpc() {
     }
   })
   ipcMain.on(CH.updateDownload, () => {
-    if (app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
+    if (UPDATER_ENABLED && app.isPackaged) autoUpdater.downloadUpdate().catch((e) => isDev && console.error('[update]', e))
   })
   ipcMain.on(CH.updateInstall, () => {
-    if (app.isPackaged) autoUpdater.quitAndInstall()
+    if (UPDATER_ENABLED && app.isPackaged) autoUpdater.quitAndInstall()
   })
 
   ipcMain.on(CH.winMinimize, () => mainWindow?.minimize())

@@ -1,7 +1,13 @@
-// Downloads the yt-dlp + ffmpeg Windows binaries into ./tools/ so electron-builder can
-// bundle them (extraResources). Run before packaging: `node build/fetch-tools.mjs`.
+// Downloads the yt-dlp + ffmpeg binaries into ./tools/ so electron-builder can bundle
+// them (extraResources). Run before packaging: `node build/fetch-tools.mjs`.
 // Every binary is verified against the publisher's own SHA-256 checksum before use.
-import { mkdir, writeFile, rm, readdir, copyFile, stat } from 'node:fs/promises'
+//
+// Cross-platform:
+//   • Windows → yt-dlp.exe + gyan.dev ffmpeg.exe (system bsdtar extracts the .zip).
+//   • macOS   → universal `yt-dlp_macos` (runs natively on Apple Silicon, supports -U) +
+//               static arm64 ffmpeg/ffprobe from Martin Riedl's build server.
+// macOS binaries are downloaded without the executable bit, so we chmod 0o755 after write.
+import { mkdir, writeFile, rm, readdir, copyFile, stat, chmod } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
@@ -10,20 +16,36 @@ import process from 'node:process'
 
 const TOOLS = join(process.cwd(), 'tools')
 
-// Use the Windows system bsdtar by absolute path: it extracts .zip and handles drive
+const isWin = process.platform === 'win32'
+const isMac = process.platform === 'darwin'
+if (!isWin && !isMac) {
+  console.error(`fetch-tools: unsupported platform "${process.platform}" — Windows and macOS only.`)
+  process.exit(1)
+}
+
+// Windows: use the system bsdtar by absolute path: it extracts .zip and handles drive
 // paths. (Git Bash's GNU `tar` on PATH cannot read zips and misreads "C:\…".)
-const SYSTAR =
-  process.platform === 'win32' ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar'
+// macOS: the system `tar` (bsdtar) on PATH extracts .zip fine.
+const SYSTAR = isWin ? join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe') : 'tar'
 
 // yt-dlp pinned to a recent release (the app then self-updates it at runtime — YouTube
 // changes break older yt-dlp often). Verified against the release's official SHA2-256SUMS.
 const YTDLP_TAG = '2026.06.09'
-const YTDLP_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/yt-dlp.exe`
+// macOS uses the universal `yt-dlp_macos` asset; we write it out as a bare `yt-dlp` so the
+// engine's tool resolver (which expects the bare name on POSIX) finds it.
+const YTDLP_ASSET = isWin ? 'yt-dlp.exe' : 'yt-dlp_macos'
+const YTDLP_OUT = isWin ? 'yt-dlp.exe' : 'yt-dlp'
+const YTDLP_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/${YTDLP_ASSET}`
 const YTDLP_SUMS = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/SHA2-256SUMS`
 
-// ffmpeg from gyan.dev, verified against its published .sha256 sidecar.
+// ffmpeg from gyan.dev (Windows), verified against its published .sha256 sidecar.
 const FFMPEG_ZIP = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'
 const FFMPEG_SHA = FFMPEG_ZIP + '.sha256'
+
+// macOS: Martin Riedl's build server — static arm64 Mach-O with a per-file .sha256 sidecar.
+// Pinned to a dated build for reproducibility (their /redirect/latest is occasionally flaky).
+const MR_VER = '1778761665_8.1.1' // ffmpeg 8.1.1, macOS arm64
+const MR_BASE = `https://ffmpeg.martin-riedl.de/download/macos/arm64/${MR_VER}`
 
 async function getBuffer(url) {
   process.stdout.write(`  fetching ${url}\n`)
@@ -62,9 +84,8 @@ async function findFile(dir, name) {
   return null
 }
 
-async function main() {
-  await mkdir(TOOLS, { recursive: true })
-
+// ---- Windows -----------------------------------------------------------------
+async function fetchWindows() {
   if (!existsSync(join(TOOLS, 'yt-dlp.exe'))) {
     const [bin, sums] = await Promise.all([getBuffer(YTDLP_URL), getText(YTDLP_SUMS)])
     const line = sums.split('\n').find((l) => /\byt-dlp\.exe\b/.test(l))
@@ -88,8 +109,54 @@ async function main() {
     await rm(zip, { force: true })
     await rm(tmp, { recursive: true, force: true })
   }
+}
 
-  for (const f of ['yt-dlp.exe', 'ffmpeg.exe']) {
+// ---- macOS -------------------------------------------------------------------
+async function fetchMac() {
+  // yt-dlp_macos -> tools/yt-dlp
+  const ytOut = join(TOOLS, YTDLP_OUT)
+  if (!existsSync(ytOut)) {
+    const [bin, sums] = await Promise.all([getBuffer(YTDLP_URL), getText(YTDLP_SUMS)])
+    // Match the exact asset name by its second field. A regex/substring match would also
+    // hit `yt-dlp_macos.zip`, whose hash differs — that would verify against the wrong line.
+    const line = sums.split('\n').find((l) => l.trim().split(/\s+/)[1] === YTDLP_ASSET)
+    if (!line) throw new Error(`${YTDLP_ASSET} not listed in SHA2-256SUMS`)
+    verify(bin, line.trim().split(/\s+/)[0], YTDLP_ASSET)
+    await writeFile(ytOut, bin)
+    await chmod(ytOut, 0o755) // GitHub release downloads lack the +x bit
+  }
+
+  // ffmpeg + ffprobe — yt-dlp needs ffprobe beside ffmpeg to mux --download-sections output.
+  for (const name of ['ffmpeg', 'ffprobe']) {
+    const out = join(TOOLS, name)
+    if (existsSync(out)) continue
+    const [zipBuf, shaText] = await Promise.all([
+      getBuffer(`${MR_BASE}/${name}.zip`),
+      getText(`${MR_BASE}/${name}.zip.sha256`),
+    ])
+    verify(zipBuf, shaText.trim().split(/\s+/)[0], `${name}.zip`)
+    const zip = join(TOOLS, `_${name}.zip`)
+    const tmp = join(TOOLS, `_${name}`)
+    await writeFile(zip, zipBuf)
+    await mkdir(tmp, { recursive: true })
+    await exec(SYSTAR, ['-xf', `_${name}.zip`, '-C', `_${name}`], { cwd: TOOLS })
+    const bin = await findFile(tmp, name) // each zip holds a single bare binary at the root
+    if (!bin) throw new Error(`${name} not found in archive`)
+    await copyFile(bin, out)
+    await chmod(out, 0o755)
+    await rm(zip, { force: true })
+    await rm(tmp, { recursive: true, force: true })
+  }
+}
+
+async function main() {
+  await mkdir(TOOLS, { recursive: true })
+
+  if (isWin) await fetchWindows()
+  else await fetchMac()
+
+  const expected = isWin ? ['yt-dlp.exe', 'ffmpeg.exe'] : ['yt-dlp', 'ffmpeg', 'ffprobe']
+  for (const f of expected) {
     const s = await stat(join(TOOLS, f))
     console.log(`  ✓ tools/${f} (${(s.size / 1024 / 1024).toFixed(1)} MB)`)
   }

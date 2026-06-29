@@ -3,6 +3,7 @@ import { CH, type LivestreamSyncApi, type UpdateStatus } from '../shared/ipc.js'
 import type { ProgressEvent } from '../engine/src/types'
 
 const api: LivestreamSyncApi = {
+  platform: process.platform,
   analyze: (input) => ipcRenderer.invoke(CH.analyze, input),
   download: (req) => ipcRenderer.invoke(CH.download, req),
   cancel: () => ipcRenderer.invoke(CH.cancel),

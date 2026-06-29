@@ -13,8 +13,12 @@ Premiere / Resolve timeline** you drop straight into your edit.
 <a href="https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe">
   <img src="https://img.shields.io/badge/⬇%20Download%20for%20Windows-LivestreamSync-9e5300?style=for-the-badge&logo=windows&logoColor=white" alt="Download LivestreamSync for Windows" height="46">
 </a>
+&nbsp;
+<a href="https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-arm64.dmg">
+  <img src="https://img.shields.io/badge/⬇%20Download%20for%20macOS-Apple%20Silicon-111?style=for-the-badge&logo=apple&logoColor=white" alt="Download LivestreamSync for macOS (Apple Silicon)" height="46">
+</a>
 
-<sub>Windows 10/11 · free & open source · installs everything it needs · no account required</sub>
+<sub>Windows 10/11 · macOS (Apple Silicon) · free & open source · installs everything it needs · no account required</sub>
 
 <br><br>
 
@@ -53,7 +57,7 @@ them in a folder — with an optional timeline you import straight into your edi
 
 | | |
 |---|---|
-| **1. Download & install** | [Grab the installer](https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe). It sets up in one click and opens LivestreamSync — nothing else to install. |
+| **1. Download & install** | Grab the [Windows installer](https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-Setup.exe) or the [macOS disk image](https://github.com/Nicolaysj/livestreamsync/releases/latest/download/LivestreamSync-arm64.dmg). Windows sets up in one click; on macOS, drag the app into Applications (first launch needs one extra step — see [Requirements & notes](#requirements--notes)). Nothing else to install. |
 | **2. Fill in three things** | Paste the anchor VOD URL, type your start/stop times, and add the streamers you want. Pick a quality and a folder. Hit **Find POVs**. |
 | **3. Review & download** | See exactly how each angle lines up, untick anyone you don't need, and click **Download clips**. Tick *Export synced timeline* to get a Premiere/Resolve project too. |
 
@@ -87,10 +91,18 @@ optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
 
 ## Requirements & notes
 
-- **Windows 10 or 11.** (macOS isn't built yet — it's on the roadmap.)
-- **SmartScreen:** the app isn't code-signed yet, so Windows may show a blue
+- **Windows 10/11, or macOS on Apple Silicon (M1 or newer).** Intel Macs aren't supported yet.
+- **Windows SmartScreen:** the app isn't code-signed yet, so Windows may show a blue
   *"Windows protected your PC"* prompt on first run. Click **More info → Run anyway**.
-  Code signing is planned — see the [roadmap](DESIGN.md).
+- **macOS Gatekeeper:** the macOS app isn't notarized yet, so the first launch is blocked.
+  Either **right-click (or Control-click) the app → Open**, then click **Open** in the dialog —
+  or run this once in Terminal to clear the quarantine flag:
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/LivestreamSync.app
+  ```
+  Because it's unsigned, the in-app updater is disabled on macOS — "Check for updates" opens
+  the [releases page](https://github.com/Nicolaysj/livestreamsync/releases/latest) instead.
+  Code signing + notarization are planned — see the [roadmap](DESIGN.md).
 - **Responsible use.** LivestreamSync is an editing tool for creators working with their own and
   their collaborators' content. It respects platform authentication (no DRM or entitlement
   bypass — subscriber-only content is skipped, not cracked) and keeps everything local. You

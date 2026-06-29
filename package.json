@@ -24,8 +24,8 @@
     "cli": "tsx cli/index.ts",
     "typecheck": "tsc --noEmit",
     "fetch-tools": "node build/fetch-tools.mjs",
-    "package": "npm run fetch-tools && npm run build:web && npm run build:main && electron-builder --win",
-    "package:mac": "npm run fetch-tools && npm run build:web && npm run build:main && electron-builder --mac --arm64"
+    "package": "npm run fetch-tools && npm run build:web && npm run build:main && electron-builder --win --publish never",
+    "package:mac": "npm run fetch-tools && npm run build:web && npm run build:main && electron-builder --mac --arm64 --publish never"
   },
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",

@@ -28,11 +28,12 @@ export class SubOnlyError extends Error {
 
 function formatSelector(platform: Platform, quality: Quality): string {
   if (platform === 'youtube') {
-    // Constrain to HLS (m3u8) renditions so --download-sections fetches only the needed
-    // fragments. If no HLS rendition exists, yt-dlp errors out cleanly instead of pulling
-    // the whole multi-hour VOD via SABR/DASH.
+    // Prefer HLS (m3u8) renditions — --download-sections range-fetches only the needed
+    // fragments from them. Many YouTube VODs no longer expose HLS to yt-dlp, so fall back
+    // to DASH (bv*+ba) and finally to best; --download-sections still bounds those to the
+    // requested window, so we never pull the whole multi-hour VOD.
     const h = quality === '1080' ? '[height<=1080]' : quality === '720' ? '[height<=720]' : ''
-    return `b[protocol^=m3u8]${h}/bv*[protocol^=m3u8]${h}+ba[protocol^=m3u8]`
+    return `b[protocol^=m3u8]${h}/bv*[protocol^=m3u8]${h}+ba[protocol^=m3u8]/bv*${h}+ba/b${h}/b`
   }
   // twitch — muxed renditions; "best" is Source (e.g. 1080p60)
   if (quality === '1080') return 'best[height<=1080]'
@@ -107,11 +108,10 @@ export async function downloadSegment(
     '-o',
     outputFile,
   ]
-  if (seg.platform === 'youtube') {
-    // Force an HLS-capable client so --download-sections stays a cheap range fetch
-    // (default SABR/DASH would pull the whole multi-hour VOD).
-    args.push('--extractor-args', 'youtube:player_client=web_safari,tv,ios')
-  }
+  // NB: we deliberately do NOT pin youtube player_client here. Forcing web_safari/tv/ios
+  // made recent VODs resolve to DRM-only or HLS-absent formats ("This video is DRM
+  // protected" / "Requested format is not available"); yt-dlp's default client rotation
+  // returns working DASH formats that --download-sections still range-fetches efficiently.
   // SECURITY: '--' ends option parsing so a URL can never be read as a yt-dlp flag.
   args.push('--', seg.url)
 

@@ -3,7 +3,7 @@
 // Every binary is verified against the publisher's own SHA-256 checksum before use.
 //
 // Cross-platform:
-//   • Windows → yt-dlp.exe + gyan.dev ffmpeg.exe (system bsdtar extracts the .zip).
+//   • Windows → yt-dlp.exe + BtbN static ffmpeg.exe/ffprobe.exe (system bsdtar extracts the .zip).
 //   • macOS   → universal `yt-dlp_macos` (runs natively on Apple Silicon, supports -U) +
 //               static arm64 ffmpeg/ffprobe from Martin Riedl's build server.
 // macOS binaries are downloaded without the executable bit, so we chmod 0o755 after write.
@@ -38,20 +38,38 @@ const YTDLP_OUT = isWin ? 'yt-dlp.exe' : 'yt-dlp'
 const YTDLP_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/${YTDLP_ASSET}`
 const YTDLP_SUMS = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/SHA2-256SUMS`
 
-// ffmpeg from gyan.dev (Windows), verified against its published .sha256 sidecar.
-const FFMPEG_ZIP = 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip'
-const FFMPEG_SHA = FFMPEG_ZIP + '.sha256'
+// ffmpeg for Windows from BtbN/FFmpeg-Builds (GitHub CDN — fast & reliable; gyan.dev stalls).
+// Static "win64-gpl" build = self-contained ffmpeg.exe + ffprobe.exe, no DLLs. Pinned to a
+// dated autobuild and verified against a hardcoded SHA-256 (BtbN ships no .sha256 sidecar).
+const FFMPEG_WIN_URL =
+  'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-28-13-24/ffmpeg-N-125331-g87bd15dc3c-win64-gpl.zip'
+const FFMPEG_WIN_SHA = '486746b729340a189e867895c348b0240c8f37edf8c9e0f9d648361a951973a5'
 
 // macOS: Martin Riedl's build server — static arm64 Mach-O with a per-file .sha256 sidecar.
 // Pinned to a dated build for reproducibility (their /redirect/latest is occasionally flaky).
 const MR_VER = '1778761665_8.1.1' // ffmpeg 8.1.1, macOS arm64
 const MR_BASE = `https://ffmpeg.martin-riedl.de/download/macos/arm64/${MR_VER}`
 
-async function getBuffer(url) {
-  process.stdout.write(`  fetching ${url}\n`)
-  const res = await fetch(url, { redirect: 'follow' })
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
-  return Buffer.from(await res.arrayBuffer())
+// Retry with backoff + a per-attempt timeout, so a stalled/flaky host (gyan.dev was the
+// classic offender) aborts and retries instead of hanging the whole CI job forever.
+async function getBuffer(url, attempts = 4) {
+  let lastErr
+  for (let i = 1; i <= attempts; i++) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(new Error('timeout')), 120_000)
+    try {
+      process.stdout.write(`  fetching ${url}${i > 1 ? ` (attempt ${i}/${attempts})` : ''}\n`)
+      const res = await fetch(url, { redirect: 'follow', signal: ctrl.signal })
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`)
+      return Buffer.from(await res.arrayBuffer())
+    } catch (e) {
+      lastErr = e
+      if (i < attempts) await new Promise((r) => setTimeout(r, 2000 * i))
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+  throw new Error(`failed after ${attempts} attempts: ${url} (${lastErr?.message || lastErr})`)
 }
 const getText = async (url) => (await getBuffer(url)).toString('utf8')
 
@@ -94,18 +112,20 @@ async function fetchWindows() {
     await writeFile(join(TOOLS, 'yt-dlp.exe'), bin)
   }
 
-  if (!existsSync(join(TOOLS, 'ffmpeg.exe'))) {
-    const [zipBuf, shaText] = await Promise.all([getBuffer(FFMPEG_ZIP), getText(FFMPEG_SHA)])
-    verify(zipBuf, shaText.trim().split(/\s+/)[0], 'ffmpeg.zip')
+  if (!existsSync(join(TOOLS, 'ffmpeg.exe')) || !existsSync(join(TOOLS, 'ffprobe.exe'))) {
+    const zipBuf = await getBuffer(FFMPEG_WIN_URL)
+    verify(zipBuf, FFMPEG_WIN_SHA, 'ffmpeg-win64-gpl.zip')
     const zip = join(TOOLS, '_ffmpeg.zip')
     const tmp = join(TOOLS, '_ffmpeg')
     await writeFile(zip, zipBuf)
     await mkdir(tmp, { recursive: true })
-    // Use relative names with cwd=TOOLS so tar doesn't read "C:\…" as a remote host:path.
+    // Relative names with cwd=TOOLS so tar doesn't read "C:\…" as a remote host:path.
     await exec(SYSTAR, ['-xf', '_ffmpeg.zip', '-C', '_ffmpeg'], { cwd: TOOLS }) // Win10+ bsdtar extracts .zip
-    const ff = await findFile(tmp, 'ffmpeg.exe')
-    if (!ff) throw new Error('ffmpeg.exe not found in archive')
-    await copyFile(ff, join(TOOLS, 'ffmpeg.exe'))
+    for (const name of ['ffmpeg.exe', 'ffprobe.exe']) {
+      const found = await findFile(tmp, name)
+      if (!found) throw new Error(`${name} not found in archive`)
+      await copyFile(found, join(TOOLS, name))
+    }
     await rm(zip, { force: true })
     await rm(tmp, { recursive: true, force: true })
   }
@@ -155,7 +175,7 @@ async function main() {
   if (isWin) await fetchWindows()
   else await fetchMac()
 
-  const expected = isWin ? ['yt-dlp.exe', 'ffmpeg.exe'] : ['yt-dlp', 'ffmpeg', 'ffprobe']
+  const expected = isWin ? ['yt-dlp.exe', 'ffmpeg.exe', 'ffprobe.exe'] : ['yt-dlp', 'ffmpeg', 'ffprobe']
   for (const f of expected) {
     const s = await stat(join(TOOLS, f))
     console.log(`  ✓ tools/${f} (${(s.size / 1024 / 1024).toFixed(1)} MB)`)

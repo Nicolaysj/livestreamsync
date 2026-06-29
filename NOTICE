@@ -22,11 +22,11 @@ FFmpeg
   Role:    trimming and remuxing downloaded segments
   License: GNU General Public License v3 (the bundled builds are GPL builds)
   Source:  https://ffmpeg.org
-           Windows build:      https://www.gyan.dev/ffmpeg/builds/
+           Windows build:      https://github.com/BtbN/FFmpeg-Builds
            macOS arm64 build:  https://ffmpeg.martin-riedl.de/
   The complete corresponding source for FFmpeg is available from the FFmpeg project and
-  from the build providers above. The FFmpeg binary (with ffprobe on macOS) is fetched and
-  SHA-256-verified at package time and is invoked as a standalone executable; it is not
+  from the build providers above. The ffmpeg/ffprobe binaries are fetched and
+  SHA-256-verified at package time and are invoked as standalone executables; they are not
   linked into LivestreamSync.
 
 

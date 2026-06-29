@@ -11,4 +11,4 @@
 - [ ] `npm run typecheck` passes
 - [ ] Matches the surrounding code style
 - [ ] Updated the README / docs / screenshots if user-facing behavior changed
-- [ ] Considered the security model (process exec, URL handling, filesystem) — see [SECURITY.md](../SECURITY.md)
+- [ ] Considered the security model (process exec, URL handling, filesystem)

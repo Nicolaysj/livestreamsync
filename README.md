@@ -102,7 +102,7 @@ optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
   ```
   Because it's unsigned, the in-app updater is disabled on macOS — "Check for updates" opens
   the [releases page](https://github.com/Nicolaysj/livestreamsync/releases/latest) instead.
-  Code signing + notarization are planned — see the [roadmap](DESIGN.md).
+  Code signing + notarization are planned — see the [roadmap](docs/DESIGN.md).
 - **Responsible use.** LivestreamSync is an editing tool for creators working with their own and
   their collaborators' content. It respects platform authentication (no DRM or entitlement
   bypass — subscriber-only content is skipped, not cracked) and keeps everything local. You
@@ -113,11 +113,8 @@ optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
 
 ## For developers
 
-LivestreamSync is open source (MIT) and contributions are welcome.
-
-- **Build it, run it, contribute:** see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
-- **Architecture & roadmap:** see **[DESIGN.md](DESIGN.md)**.
-- **Security model:** see **[SECURITY.md](SECURITY.md)**.
+LivestreamSync is open source (MIT) and contributions are welcome — the quick start is below,
+and the architecture & roadmap live in **[docs/DESIGN.md](docs/DESIGN.md)**.
 
 **Stack:** Electron + Vite + React + TypeScript, with a headless TypeScript engine that
 also runs from a CLI. Bundled `ffmpeg` and auto-updating `yt-dlp`. Third-party

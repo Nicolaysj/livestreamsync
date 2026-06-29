@@ -10,8 +10,7 @@
 >   Worker / Twitch Helix fallback, ProRes/DNxHR transcode, and the Resolve Multicam helper
 >   are **not implemented** — they're ideas/roadmap.
 >
-> For what actually ships today, see the [README](README.md); for how to build it, see
-> [CONTRIBUTING.md](CONTRIBUTING.md).
+> For what actually ships today — and how to build it — see the [README](../README.md).
 
 ---
 

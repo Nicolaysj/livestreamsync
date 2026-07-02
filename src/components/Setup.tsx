@@ -18,6 +18,7 @@ export interface SetupForm {
 function durationLabel(start: string, stop: string): string | null {
   try {
     const a = parseTimecodeToSec(start)
+    if (!stop.trim()) return 'to end of VOD'
     const b = parseTimecodeToSec(stop)
     if (b > a) return secToTimecode(b - a)
   } catch {
@@ -46,7 +47,8 @@ export function Setup({
 }) {
   const set = <K extends keyof SetupForm>(k: K, v: SetupForm[K]) => setForm({ ...form, [k]: v })
   const dur = durationLabel(form.start, form.stop)
-  const canRun = form.anchorUrl.trim() && form.start.trim() && form.stop.trim() && form.handles.length > 0
+  // Stop is optional — blank means "to the end of the VOD".
+  const canRun = form.anchorUrl.trim() && form.start.trim() && form.handles.length > 0
 
   const pickFolder = async () => {
     const dir = await window.livestreamsync?.pickFolder?.()
@@ -77,7 +79,7 @@ export function Setup({
         <div className="grid grid-cols-2 gap-4">
           <Field label="Start" placeholder="04:40:21" value={form.start} onChange={(e) => set('start', e.target.value)} />
           <div className="relative">
-            <Field label="Stop" placeholder="04:55:50" value={form.stop} onChange={(e) => set('stop', e.target.value)} />
+            <Field label="Stop" placeholder="Empty = end of VOD" value={form.stop} onChange={(e) => set('stop', e.target.value)} />
             {dur && (
               <span className="absolute right-3 top-[34px] rounded-md bg-accent/15 px-2 py-0.5 text-xs font-medium text-accent-2">
                 {dur}

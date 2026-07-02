@@ -1,5 +1,5 @@
 // LivestreamSync v0 — headless CLI. Drives the engine end-to-end.
-//   tsx cli/index.ts <anchorUrl> <start> <stop> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]
+//   tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]
 
 import process from 'node:process'
 import { resolve } from 'node:path'
@@ -74,14 +74,15 @@ async function main() {
   const { positionals, flags } = parseArgs(process.argv.slice(2))
   const [anchorUrl, startRaw, stopRaw] = positionals
   if (!anchorUrl || !startRaw || !stopRaw) {
-    console.error('Usage: tsx cli/index.ts <anchorUrl> <start> <stop> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]')
+    console.error('Usage: tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]')
     process.exit(2)
   }
 
   // The explicit <start> argument always wins; a ?t= carried along in a copied
   // "URL at current time" must not silently override what the user typed.
   const startSec = parseTimecodeToSec(startRaw)
-  const endSec = parseTimecodeToSec(stopRaw)
+  // "end" = to the end of the VOD (the engine clamps to the anchor's duration).
+  const endSec = stopRaw.toLowerCase() === 'end' ? Number.POSITIVE_INFINITY : parseTimecodeToSec(stopRaw)
   const tParam = parseTParam(anchorUrl)
   if (tParam != null && tParam !== startSec) {
     console.error(C.yellow(`Note: anchor URL carries ?t=${secToTimecode(tParam)} — using your explicit start ${secToTimecode(startSec)}.`))
@@ -106,7 +107,10 @@ async function main() {
   const ctx = { tools: resolveTools(), log: (m: string) => console.error(C.dim(`  · ${m}`)) }
 
   console.log(C.bold('\nLivestreamSync'))
-  console.log(C.dim(`Window: ${secToTimecode(startSec)} → ${secToTimecode(endSec)} (${secToTimecode(endSec - startSec)})`))
+  const windowLabel = Number.isFinite(endSec)
+    ? `${secToTimecode(endSec)} (${secToTimecode(endSec - startSec)})`
+    : 'end of VOD'
+  console.log(C.dim(`Window: ${secToTimecode(startSec)} → ${windowLabel}`))
   process.stdout.write(C.dim('Analyzing… '))
 
   const analysis = await analyze(input, ctx)

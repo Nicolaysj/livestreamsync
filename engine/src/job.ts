@@ -42,8 +42,13 @@ export async function analyze(input: AnalyzeInput, ctx: ProviderContext): Promis
   const anchor = await resolveAnchor(input.anchorUrl, providers)
 
   const startSec = Math.max(0, input.startSec)
+  // endSec = Infinity means "to the end of the VOD" — the duration clamp below
+  // turns it into a concrete stop time.
   let endSec = input.endSec
   if (anchor.durationSec > 0) endSec = Math.min(endSec, anchor.durationSec)
+  if (!Number.isFinite(endSec)) {
+    throw new Error("This VOD doesn't report its length — please enter an explicit stop time.")
+  }
   if (!(endSec > startSec)) throw new Error('Stop time must be after start time (and within the VOD).')
 
   const window = {

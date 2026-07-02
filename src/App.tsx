@@ -68,7 +68,9 @@ export default function App() {
     let endSec: number
     try {
       startSec = parseTimecodeToSec(form.start)
-      endSec = parseTimecodeToSec(form.stop)
+      // Blank stop = "to the end of the VOD"; the engine clamps Infinity to the
+      // anchor's real duration (and errors if the VOD doesn't report one).
+      endSec = form.stop.trim() ? parseTimecodeToSec(form.stop) : Number.POSITIVE_INFINITY
     } catch {
       setError('Check your start/stop times — use HH:MM:SS.')
       return

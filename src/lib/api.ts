@@ -21,7 +21,9 @@ const MOCK_ROSTER: RosterEntry[] = [
 function mockAnalysis(input: AnalyzeInput): Analysis {
   const anchorStartMs = Date.parse('2026-06-23T22:30:10Z')
   const startMs = anchorStartMs + input.startSec * 1000
-  const lengthSec = Math.max(1, input.endSec - input.startSec)
+  // Clamp to the mock VOD's duration like the real engine (endSec may be Infinity).
+  const endSec = Math.min(input.endSec, 37192)
+  const lengthSec = Math.max(1, endSec - input.startSec)
   const sample: Record<string, { status: POVResult['status']; offset: number; name: string; yt?: boolean }> = {
     pokimane: { status: 'covered', offset: 7847, name: 'Pokimane' },
     lilypichu: { status: 'covered', offset: 16064, name: 'LilyPichu' },

@@ -48,6 +48,15 @@ function rateBlock(fps: number, ntsc: boolean): string {
   return `<rate><timebase>${fps}</timebase><ntsc>${ntsc ? 'TRUE' : 'FALSE'}</ntsc></rate>`
 }
 
+// FCP7 label2 colour names as written by Premiere's own xmeml exporter. Each POV
+// gets one colour (cycled) on both its video and audio clipitems, so multi-POV
+// timelines are tellable-apart at a glance after import.
+const LABEL_PALETTE = ['Iris', 'Rose', 'Mango', 'Forest', 'Caribbean', 'Lavender', 'Violet', 'Cerulean'] as const
+
+function labelBlock(idx: number): string {
+  return `<labels><label2>${LABEL_PALETTE[idx % LABEL_PALETTE.length]}</label2></labels>`
+}
+
 /** Build the xmeml document. Returns an XML string. */
 export function buildFcpXml(opts: FcpExportOptions): string {
   const { fps, ntsc, width, height } = opts
@@ -91,6 +100,7 @@ export function buildFcpXml(opts: FcpExportOptions): string {
         `<track>` +
         `<clipitem id="${vId}"><name>${xmlEscape(c.name)}</name>${rate}` +
         `<start>${c.startFrame}</start><end>${end}</end><in>0</in><out>${c.durFrames}</out>` +
+        labelBlock(c.idx) +
         fileDef(c) +
         `<link><linkclipref>${vId}</linkclipref><mediatype>video</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
         `<link><linkclipref>${aId}</linkclipref><mediatype>audio</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
@@ -108,6 +118,7 @@ export function buildFcpXml(opts: FcpExportOptions): string {
         `<track>` +
         `<clipitem id="${aId}"><name>${xmlEscape(c.name)}</name>${rate}` +
         `<start>${c.startFrame}</start><end>${end}</end><in>0</in><out>${c.durFrames}</out>` +
+        labelBlock(c.idx) +
         `<file id="${c.fileId}"/>` +
         `<sourcetrack><mediatype>audio</mediatype><trackindex>1</trackindex></sourcetrack>` +
         `<link><linkclipref>${vId}</linkclipref><mediatype>video</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +

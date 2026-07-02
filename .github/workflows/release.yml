@@ -15,7 +15,23 @@ permissions:
   contents: write
 
 jobs:
+  # Tagging without bumping package.json would ship a release whose latest.yml
+  # still carries the old version — every installed copy's auto-updater would
+  # then report "up to date" forever. Refuse to build such a tag.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify tag matches package.json version
+        run: |
+          PKG="v$(node -p "require('./package.json').version")"
+          if [ "$PKG" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG. Bump the version, retag, and push again."
+            exit 1
+          fi
+
   build-windows:
+    needs: guard
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -44,6 +60,7 @@ jobs:
           retention-days: 1
 
   build-mac:
+    needs: guard
     # macos-14 is an Apple Silicon (arm64) runner — builds the arm64 app natively.
     runs-on: macos-14
     steps:
@@ -83,4 +100,6 @@ jobs:
         with:
           files: dist-artifacts/**/*
           generate_release_notes: true
-          fail_on_unmatched_files: false
+          # A glob that matches nothing must fail the publish, not silently
+          # create an empty release ("atomic publish" promise above).
+          fail_on_unmatched_files: true

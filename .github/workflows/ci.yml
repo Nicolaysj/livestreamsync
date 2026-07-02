@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   typecheck:
@@ -25,3 +29,11 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      # Build both bundles so a renderer or esbuild break surfaces here, not
+      # on the next release tag (typecheck alone doesn't catch bundler issues).
+      - name: Build renderer
+        run: npm run build:web
+
+      - name: Build main process
+        run: npm run build:main

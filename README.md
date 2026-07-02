@@ -75,7 +75,7 @@ them in a folder — with an optional timeline you import straight into your edi
 - **See the sync before you commit** — a visual lane chart shows where every POV lines up, who joined late, and who has no coverage.
 - **One miss doesn't sink the run** — each streamer downloads independently with live progress and speed; failures are reported, not fatal.
 - **Drop-in timeline** — optional FCP7-XML export puts every angle on its own track at the right offset, and imports into **both** Adobe Premiere Pro and DaVinci Resolve.
-- **Remembers your crew** — save frequent collaborators to a roster and add them with one click.
+- **Remembers your crew** — collaborators from past runs resurface as one-click roster suggestions.
 
 ## How the sync works
 
@@ -95,8 +95,11 @@ optionally, a single `LivestreamSync_timeline.xml` you import into your NLE.
 - **Windows SmartScreen:** the app isn't code-signed yet, so Windows may show a blue
   *"Windows protected your PC"* prompt on first run. Click **More info → Run anyway**.
 - **macOS Gatekeeper:** the macOS app isn't notarized yet, so the first launch is blocked.
-  Either **right-click (or Control-click) the app → Open**, then click **Open** in the dialog —
-  or run this once in Terminal to clear the quarantine flag:
+  Double-click the app once (it will be refused), then open **System Settings →
+  Privacy & Security**, scroll down to the *"LivestreamSync was blocked…"* notice and click
+  **Open Anyway**. (On macOS 15 Sequoia and newer this is the only supported route —
+  the old right-click → Open trick no longer works for unnotarized apps.)
+  Alternatively, run this once in Terminal to clear the quarantine flag:
   ```bash
   xattr -dr com.apple.quarantine /Applications/LivestreamSync.app
   ```

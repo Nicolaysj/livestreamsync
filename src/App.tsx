@@ -28,8 +28,10 @@ export default function App() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | undefined>()
+  const [toolWarning, setToolWarning] = useState<string | undefined>()
   const [progress, setProgress] = useState<Record<string, ProgressEvent>>({})
   const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState<string | undefined>()
   const [xmlPath, setXmlPath] = useState<string | undefined>()
   const analysisRef = useRef<Analysis | null>(null)
   analysisRef.current = analysis
@@ -38,7 +40,25 @@ export default function App() {
   useEffect(() => {
     api.getRoster().then(setRoster).catch(() => {})
     api.getDefaults().then((d) => setForm((f) => (f.outDir ? f : { ...f, outDir: d.outDir }))).catch(() => {})
-    const off = api.onProgress((ev) => setProgress((prev) => ({ ...prev, [`${ev.platform}:${ev.handle}`]: ev })))
+    api
+      .checkTools()
+      .then((t) => {
+        if (!t.ytDlp || !t.ffmpeg) {
+          const missing = [!t.ytDlp && 'yt-dlp', !t.ffmpeg && 'ffmpeg'].filter(Boolean).join(' and ')
+          setToolWarning(
+            `${missing} could not be found, so downloads will fail. Antivirus sometimes quarantines yt-dlp — try restoring it or reinstalling LivestreamSync.`,
+          )
+        }
+      })
+      .catch(() => {})
+    const off = api.onProgress((ev) =>
+      setProgress((prev) => {
+        const key = `${ev.platform}:${ev.handle}`
+        // Error/done events may arrive without a percent — keep the last known
+        // value so a clip that dies at 60% doesn't visually reset to 0.
+        return { ...prev, [key]: { ...ev, percent: ev.percent ?? prev[key]?.percent } }
+      }),
+    )
     return off
   }, [])
 
@@ -87,9 +107,30 @@ export default function App() {
     })
   }
 
+  // Remember collaborators that produced a clip so the roster suggestions fill
+  // themselves in over time (entries keyed by platform:handle, newest first).
+  const rememberStreamers = (povs: POVResult[]) => {
+    const fresh = povs
+      .filter((p) => p.outputFile)
+      .map((p) => ({
+        id: `${p.platform}:${p.handle.toLowerCase()}`,
+        displayName: p.displayName,
+        ...(p.platform === 'twitch' ? { twitch: p.handle } : { youtube: p.handle }),
+      }))
+    if (fresh.length === 0) return
+    setRoster((prev) => {
+      const seen = new Set(fresh.map((e) => e.id))
+      const merged = [...fresh, ...prev.filter((e) => !seen.has(e.id))].slice(0, 50)
+      void api.saveRoster(merged).catch(() => {})
+      return merged
+    })
+  }
+
   const runDownload = async () => {
     if (!analysis) return
     const myJob = ++jobIdRef.current
+    setError(undefined)
+    setExportError(undefined)
     setStage('downloading')
     setProgress({})
     try {
@@ -101,6 +142,7 @@ export default function App() {
       const updated = { ...analysis, povs: [...povs] }
       setAnalysis(updated)
       setStage('done')
+      rememberStreamers(povs)
       if (form.exportXml) void runExport(updated)
     } catch (e) {
       if (jobIdRef.current !== myJob) return
@@ -113,11 +155,12 @@ export default function App() {
     const target = a ?? analysisRef.current
     if (!target) return
     setExporting(true)
+    setExportError(undefined)
     try {
       const path = await api.exportTimeline({ analysis: target, outDir: form.outDir })
       setXmlPath(path)
-    } catch {
-      /* keep silent — non-fatal */
+    } catch (e) {
+      setExportError(e instanceof Error ? e.message : 'Timeline export failed.')
     } finally {
       setExporting(false)
     }
@@ -129,6 +172,7 @@ export default function App() {
     setProgress({})
     setXmlPath(undefined)
     setError(undefined)
+    setExportError(undefined)
   }
 
   return (
@@ -146,10 +190,27 @@ export default function App() {
             className="h-full overflow-y-auto"
           >
             {stage === 'setup' && (
-              <Setup form={form} setForm={setForm} roster={roster} onAnalyze={runAnalyze} analyzing={analyzing} error={error} />
+              <Setup
+                form={form}
+                setForm={setForm}
+                roster={roster}
+                onAnalyze={runAnalyze}
+                analyzing={analyzing}
+                error={error}
+                warning={toolWarning}
+              />
             )}
             {stage === 'review' && analysis && (
-              <Review analysis={analysis} onBack={() => setStage('setup')} onToggle={toggle} onDownload={runDownload} />
+              <Review
+                analysis={analysis}
+                error={error}
+                onBack={() => {
+                  setError(undefined) // an analyze/download error must not resurface on the Setup form
+                  setStage('setup')
+                }}
+                onToggle={toggle}
+                onDownload={runDownload}
+              />
             )}
             {(stage === 'downloading' || stage === 'done') && analysis && (
               <Progress
@@ -158,6 +219,7 @@ export default function App() {
                 done={stage === 'done'}
                 xmlPath={xmlPath}
                 exporting={exporting}
+                exportError={exportError}
                 onExport={() => runExport()}
                 onOpenFolder={() => api.openFolder(form.outDir)}
                 onReveal={(f) => api.revealFile(f)}

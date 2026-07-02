@@ -1,6 +1,8 @@
 // Pre-synced timeline export as FCP7 XML (xmeml v5) — the format both Premiere Pro
 // and DaVinci Resolve import with each clip kept on its own track at the right offset.
 
+import { clampFinite } from './validate.js'
+
 export interface FcpClipInput {
   name: string
   file: string // absolute path to the downloaded clip
@@ -29,10 +31,17 @@ function xmlEscape(s: string): string {
 }
 
 function pathUrl(absPath: string): string {
-  // C:\dir\file.mp4 -> file://localhost/C:/dir/file.mp4 (spaces/percent-encoded)
+  // C:\dir\file.mp4 -> file://localhost/C:/dir/file.mp4. encodeURI leaves '#' and
+  // '%' alone, so a folder like "#raid night" or a name with '%' yields a URL whose
+  // tail is parsed as a fragment — Premiere/Resolve then show every clip as media
+  // offline. Encode each segment fully and restore the drive-letter colon.
   const fwd = absPath.replace(/\\/g, '/')
   const withSlash = fwd.startsWith('/') ? fwd : `/${fwd}`
-  return 'file://localhost' + encodeURI(withSlash)
+  const encoded = withSlash
+    .split('/')
+    .map((seg) => encodeURIComponent(seg).replace(/%3A/gi, ':'))
+    .join('/')
+  return 'file://localhost' + encoded
 }
 
 function rateBlock(fps: number, ntsc: boolean): string {
@@ -41,7 +50,11 @@ function rateBlock(fps: number, ntsc: boolean): string {
 
 /** Build the xmeml document. Returns an XML string. */
 export function buildFcpXml(opts: FcpExportOptions): string {
-  const { fps, ntsc, width, height, pad } = opts
+  const { fps, ntsc, width, height } = opts
+  // Must mirror the clamp in downloadSegment: the export math assumes the file
+  // really starts at offset-pad, so a pad the download refused (e.g. 90 → 60,
+  // or negative) would shift every clip on the timeline.
+  const pad = clampFinite(opts.pad, 0, 60)
   const clips = opts.clips.filter((c) => c.windowLenSec > 0)
   if (clips.length === 0) throw new Error('No clips to export.')
 

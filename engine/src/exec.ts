@@ -3,6 +3,7 @@
 // handles, paths) can never be interpreted as shell syntax — no command injection.
 
 import { spawn } from 'node:child_process'
+import { StringDecoder } from 'node:string_decoder'
 
 export interface RunResult {
   code: number | null
@@ -21,7 +22,14 @@ const DEFAULT_MAX_BUFFER = 16 * 1024 * 1024 // 16 MB
 export function run(cmd: string, args: string[], opts: RunOptions = {}): Promise<RunResult> {
   const maxBuffer = opts.maxBuffer ?? DEFAULT_MAX_BUFFER
   return new Promise((resolve, reject) => {
-    const child = spawn(cmd, args, { shell: false, cwd: opts.cwd, windowsHide: true })
+    // Detach on POSIX (as in stream()) so a timeout can kill the whole group —
+    // yt-dlp may have already spawned ffmpeg even for metadata calls.
+    const child = spawn(cmd, args, {
+      shell: false,
+      cwd: opts.cwd,
+      windowsHide: true,
+      detached: process.platform !== 'win32',
+    })
     let stdout = ''
     let stderr = ''
     let killed = false
@@ -30,15 +38,19 @@ export function run(cmd: string, args: string[], opts: RunOptions = {}): Promise
     if (opts.timeoutMs && opts.timeoutMs > 0) {
       timer = setTimeout(() => {
         killed = true
-        child.kill('SIGKILL')
+        killTree(child)
       }, opts.timeoutMs)
     }
 
+    // StringDecoder buffers multi-byte UTF-8 sequences split across chunks —
+    // plain toString() would mangle titles/channel names into U+FFFD.
+    const outDec = new StringDecoder('utf8')
+    const errDec = new StringDecoder('utf8')
     child.stdout.on('data', (d: Buffer) => {
-      if (stdout.length < maxBuffer) stdout += d.toString('utf8')
+      if (stdout.length < maxBuffer) stdout += outDec.write(d)
     })
     child.stderr.on('data', (d: Buffer) => {
-      if (stderr.length < maxBuffer) stderr += d.toString('utf8')
+      if (stderr.length < maxBuffer) stderr += errDec.write(d)
     })
     child.on('error', (err) => {
       if (timer) clearTimeout(timer)
@@ -113,16 +125,18 @@ export function stream(
 
   const wire = (src: 'stdout' | 'stderr') => {
     let buf = ''
+    const dec = new StringDecoder('utf8')
     const s = src === 'stdout' ? child.stdout : child.stderr
     s.on('data', (d: Buffer) => {
       lastActivity = Date.now()
-      buf += d.toString('utf8')
+      buf += dec.write(d)
       // yt-dlp/ffmpeg use \r for in-place progress; treat both \r and \n as line breaks.
       const parts = buf.split(/\r\n|\r|\n/)
       buf = parts.pop() ?? ''
       for (const line of parts) if (line.length) onLine(line, src)
     })
     s.on('close', () => {
+      buf += dec.end()
       if (buf.length) onLine(buf, src)
     })
   }

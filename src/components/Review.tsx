@@ -1,4 +1,4 @@
-import { ChevronLeft, Download, Check } from 'lucide-react'
+import { ChevronLeft, Download, Check, AlertCircle } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Analysis, POVResult } from '../../engine/src/types'
 import { Avatar, StatusChip } from './bits'
@@ -8,11 +8,14 @@ import { STATUS_META, secToTimecode } from '../lib/format'
 
 export function Review({
   analysis,
+  error,
   onBack,
   onToggle,
   onDownload,
 }: {
   analysis: Analysis
+  /** A download that failed as a whole bounces back here — surface why. */
+  error?: string
   onBack: () => void
   onToggle: (p: POVResult) => void
   onDownload: () => void
@@ -77,6 +80,13 @@ export function Review({
           })}
         </div>
       </div>
+
+      {error && (
+        <div className="mx-8 mb-3 flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-sm text-danger">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
 
       <div className="flex items-center justify-between border-t border-border/60 px-8 py-4">
         <span className="text-sm text-muted">

@@ -11,6 +11,7 @@ export function Progress({
   done,
   xmlPath,
   exporting,
+  exportError,
   onExport,
   onOpenFolder,
   onReveal,
@@ -22,16 +23,24 @@ export function Progress({
   done: boolean
   xmlPath?: string
   exporting: boolean
+  exportError?: string
   onExport: () => void
   onOpenFolder: () => void
   onReveal: (file: string) => void
   onNewJob: () => void
   onCancel: () => void
 }) {
+  // Live state must come from the progress events: the analysis povs cross the
+  // IPC boundary by value and only refresh after the whole batch resolves, so
+  // p.outputFile / p.status stay stale for the entire run.
+  const evFor = (p: POVResult) => progress[`${p.platform}:${p.handle}`]
+  const clipDone = (p: POVResult) => evFor(p)?.phase === 'done' || !!p.outputFile
+  const clipFailed = (p: POVResult) =>
+    evFor(p)?.phase === 'error' || (done && (p.status === 'error' || p.status === 'sub-only'))
   const targets = analysis.povs.filter((p) => p.selected && STATUS_META[p.status].downloadable)
-  const finished = targets.filter((p) => p.outputFile).length
+  const finished = targets.filter(clipDone).length
   const overall = targets.length
-    ? Math.round(targets.reduce((s, p) => s + (progress[`${p.platform}:${p.handle}`]?.percent ?? 0), 0) / targets.length)
+    ? Math.round(targets.reduce((s, p) => s + (clipDone(p) ? 100 : (evFor(p)?.percent ?? 0)), 0) / targets.length)
     : 0
 
   return (
@@ -58,31 +67,37 @@ export function Progress({
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
         {targets.map((p) => {
-          const ev = progress[`${p.platform}:${p.handle}`]
-          const pct = p.outputFile ? 100 : (ev?.percent ?? 0)
-          const failed = p.status === 'error' || p.status === 'sub-only'
+          const ev = evFor(p)
+          const ok = clipDone(p)
+          const failed = !ok && clipFailed(p)
+          const pct = ok ? 100 : (ev?.percent ?? 0)
+          const failReason = ev?.message || p.reason || 'Failed'
           return (
             <div key={`${p.platform}:${p.handle}`} className="flex items-center gap-3 rounded-xl border border-border bg-panel/40 px-3.5 py-3">
               <Avatar src={p.avatarUrl} name={p.displayName} platform={p.platform} size={34} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="truncate text-sm font-medium text-ink">{p.displayName}</span>
-                  <span className="ml-2 shrink-0 text-xs tabular-nums text-faint">
-                    {failed ? '' : p.outputFile ? fmtBytes(p.fileBytes) : `${Math.floor(pct)}%${ev?.speed ? ` · ${ev.speed}` : ''}`}
+                  <span className={clsx('ml-2 max-w-[260px] shrink-0 truncate text-xs tabular-nums', failed ? 'text-danger' : 'text-faint')}>
+                    {failed
+                      ? failReason
+                      : ok
+                        ? fmtBytes(p.fileBytes) || 'Done'
+                        : `${Math.floor(pct)}%${ev?.speed ? ` · ${ev.speed}` : ''}`}
                   </span>
                 </div>
                 <div className="relative mt-1.5 h-1.5 overflow-hidden rounded-full bg-bg-2">
                   <div
                     className={clsx(
                       'absolute inset-y-0 left-0 rounded-full transition-[width] duration-300',
-                      failed ? 'bg-danger/70' : p.outputFile ? 'bg-ok' : 'bg-accent-strong',
+                      failed ? 'bg-danger/70' : ok ? 'bg-ok' : 'bg-accent-strong',
                     )}
                     style={{ width: `${failed ? 100 : pct}%` }}
                   />
                 </div>
               </div>
               <div className="w-6 shrink-0 text-center">
-                {p.outputFile ? (
+                {ok ? (
                   <CheckCircle2 className="h-5 w-5 text-ok" />
                 ) : failed ? (
                   <AlertCircle className="h-5 w-5 text-danger" />
@@ -101,6 +116,13 @@ export function Progress({
           <SkippedList povs={analysis.povs} />
         )}
       </div>
+
+      {done && exportError && (
+        <div className="mt-4 flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-sm text-danger">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>Timeline export failed: {exportError}</span>
+        </div>
+      )}
 
       <div className="mt-5 flex items-center justify-between gap-3">
         {done ? (

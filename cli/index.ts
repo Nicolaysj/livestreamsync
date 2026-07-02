@@ -25,14 +25,37 @@ const C = {
   cyan: (s: string) => `\x1b[36m${s}\x1b[0m`,
 }
 
+// Flags that take a value — both `--out DIR` (what the usage line shows) and
+// `--out=DIR` must work. Treating `--out DIR` as a boolean + positional used to
+// send downloads to a literal ./true directory and look up the channel "true".
+const VALUE_FLAGS = new Set(['streamers', 'out', 'quality'])
+
 function parseArgs(argv: string[]) {
   const positionals: string[] = []
   const flags: Record<string, string | boolean> = {}
-  for (const a of argv) {
-    if (a.startsWith('--')) {
-      const [k, v] = a.slice(2).split('=')
-      flags[k] = v ?? true
-    } else positionals.push(a)
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (!a.startsWith('--')) {
+      positionals.push(a)
+      continue
+    }
+    const eq = a.indexOf('=')
+    if (eq >= 0) {
+      flags[a.slice(2, eq)] = a.slice(eq + 1)
+      continue
+    }
+    const k = a.slice(2)
+    if (VALUE_FLAGS.has(k)) {
+      const v = argv[i + 1]
+      if (v == null || v.startsWith('--')) {
+        console.error(`Error: --${k} requires a value.`)
+        process.exit(2)
+      }
+      flags[k] = v
+      i++
+    } else {
+      flags[k] = true
+    }
   }
   return { positionals, flags }
 }
@@ -55,8 +78,14 @@ async function main() {
     process.exit(2)
   }
 
-  const startSec = parseTParam(anchorUrl) ?? parseTimecodeToSec(startRaw)
+  // The explicit <start> argument always wins; a ?t= carried along in a copied
+  // "URL at current time" must not silently override what the user typed.
+  const startSec = parseTimecodeToSec(startRaw)
   const endSec = parseTimecodeToSec(stopRaw)
+  const tParam = parseTParam(anchorUrl)
+  if (tParam != null && tParam !== startSec) {
+    console.error(C.yellow(`Note: anchor URL carries ?t=${secToTimecode(tParam)} — using your explicit start ${secToTimecode(startSec)}.`))
+  }
   const streamers = String(flags.streamers || '')
     .split(',')
     .map((s) => s.trim())
@@ -100,6 +129,17 @@ async function main() {
   }
 
   console.log(C.dim(`\nDownloading ${selected.length} clip(s) → ${outDir}\n`))
+
+  // Ctrl+C must cancel the job properly: the engine spawns yt-dlp/ffmpeg in their
+  // own process groups (POSIX), so without an abort they'd survive the CLI and
+  // keep downloading. First ^C cancels + cleans up partials; second ^C force-quits.
+  const ac = new AbortController()
+  process.on('SIGINT', () => {
+    if (ac.signal.aborted) process.exit(130)
+    console.error(C.yellow('\nCancelling — cleaning up partial files… (Ctrl+C again to force quit)'))
+    ac.abort()
+  })
+
   const pct: Record<string, number> = {}
   await downloadAnalysis(analysis, { outDir, quality, padSec: 4, filenamePrefix: 'LivestreamSync' }, ctx, {
     onProgress: (ev) => {
@@ -115,7 +155,7 @@ async function main() {
         console.log(C.red(`  ${ev.handle.padEnd(18)} ✕ ${ev.message || 'failed'}`))
       }
     },
-  })
+  }, ac.signal)
 
   console.log(C.bold('\nResults:'))
   for (const p of analysis.povs) {
@@ -131,9 +171,11 @@ async function main() {
 }
 
 function fmtBytes(n?: number): string {
-  if (!n) return ''
+  if (n == null || !Number.isFinite(n) || n <= 0) return ''
   const mb = n / (1024 * 1024)
-  return mb > 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${mb.toFixed(0)} MB`
+  if (mb >= 1024) return `${(mb / 1024).toFixed(2)} GB`
+  if (mb >= 1) return `${mb.toFixed(0)} MB`
+  return `${Math.max(1, Math.round(n / 1024))} KB`
 }
 
 main().catch((err) => {

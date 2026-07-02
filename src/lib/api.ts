@@ -63,7 +63,11 @@ const mockApi: LivestreamSyncApi = {
     await delay(900)
     return mockAnalysis(input)
   },
-  download: async (req) => {
+  download: async (reqIn) => {
+    // Mirror the real IPC boundary: everything crosses by structured clone, so
+    // mutations inside the "engine" must never show up on the renderer's own
+    // objects. (A shared-object mock previously masked a stale-progress-UI bug.)
+    const req = structuredClone(reqIn)
     const targets = req.analysis.povs.filter((p) => p.selected && p.segment)
     await Promise.all(
       targets.map(async (p, i) => {

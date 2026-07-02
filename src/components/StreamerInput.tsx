@@ -1,8 +1,27 @@
 import { useState, type KeyboardEvent } from 'react'
 import { X, Plus, Users } from 'lucide-react'
-import { inferPlatform } from '../../engine/src/validate'
+import { inferPlatform, isValidTwitchLogin, isValidYouTubeHandle } from '../../engine/src/validate'
 import type { RosterEntry } from '../../engine/src/types'
 import { PlatformIcon } from './bits'
+
+// Pasting a *video* link here is the single most likely mistake in a VOD tool —
+// catch it up front instead of letting "videos/123456789" fail lookup later.
+const VIDEO_URL_RE = /^https?:\/\/((www\.|m\.)?twitch\.tv\/videos\/|(www\.|m\.)?youtube\.com\/(watch|shorts|live)|youtu\.be\/)/i
+const CHANNEL_URL_RE = /^https?:\/\/(www\.|m\.)?(twitch\.tv|youtube\.com)\/(@)?/i
+
+/** "https://twitch.tv/name?x=1" / "youtube.com/@name/videos" → "name" / "@name". */
+function extractHandle(token: string): string {
+  if (!CHANNEL_URL_RE.test(token)) return token
+  const keepAt = /youtube\.com\/@/i.test(token)
+  const rest = token.replace(CHANNEL_URL_RE, '').replace(/^(c|channel|user)\//i, '')
+  const first = rest.split(/[/?#]/)[0]
+  return keepAt ? `@${first}` : first
+}
+
+function isPlausibleHandle(h: string): boolean {
+  // Raw form also covers pasted UC… channel ids, which must not get an '@' prefix.
+  return isValidTwitchLogin(h) || isValidYouTubeHandle(h) || (!h.startsWith('@') && isValidYouTubeHandle(`@${h}`))
+}
 
 export function StreamerInput({
   handles,
@@ -14,18 +33,27 @@ export function StreamerInput({
   roster: RosterEntry[]
 }) {
   const [draft, setDraft] = useState('')
+  const [hint, setHint] = useState<string | undefined>()
 
   const add = (raw: string) => {
-    const tokens = raw
-      .split(/[,\s]+/)
-      .map((t) => t.trim().replace(/^https?:\/\/(www\.)?twitch\.tv\//i, '').replace(/^https?:\/\/(www\.)?youtube\.com\//i, ''))
-      .filter(Boolean)
+    const tokens = raw.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean)
     const next = [...handles]
+    let problem: string | undefined
     for (const t of tokens) {
-      if (!next.some((h) => h.toLowerCase() === t.toLowerCase())) next.push(t)
+      if (VIDEO_URL_RE.test(t)) {
+        problem = 'That looks like a video link — it belongs in the Anchor VOD field. Add streamers here by channel handle (e.g. pokimane or @sydeon).'
+        continue
+      }
+      const h = extractHandle(t)
+      if (!h || !isPlausibleHandle(h)) {
+        problem = `“${t}” doesn’t look like a Twitch login or YouTube handle.`
+        continue
+      }
+      if (!next.some((x) => x.toLowerCase() === h.toLowerCase())) next.push(h)
     }
+    setHint(problem)
     onChange(next)
-    setDraft('')
+    setDraft(problem ? raw : '')
   }
 
   const remove = (h: string) => onChange(handles.filter((x) => x !== h))
@@ -62,13 +90,18 @@ export function StreamerInput({
         ))}
         <input
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setHint(undefined)
+          }}
           onKeyDown={onKey}
           onBlur={() => draft.trim() && add(draft)}
           placeholder={handles.length ? 'Add another…' : 'Type a handle and press Enter (e.g. pokimane, @sydeon)'}
           className="min-w-[180px] flex-1 bg-transparent px-1.5 py-1 text-sm text-ink outline-none placeholder:text-faint"
         />
       </div>
+
+      {hint && <p className="mt-1.5 text-xs text-warn">{hint}</p>}
 
       {rosterSuggestions.length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">

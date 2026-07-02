@@ -3,9 +3,11 @@ import type { POVStatus } from '../../engine/src/types'
 export { secToTimecode, parseTimecodeToSec, parseTParam } from '../../engine/src/time'
 
 export function fmtBytes(n?: number): string {
-  if (!n) return ''
+  if (n == null || !Number.isFinite(n) || n <= 0) return ''
   const mb = n / (1024 * 1024)
-  return mb >= 1024 ? `${(mb / 1024).toFixed(2)} GB` : `${Math.round(mb)} MB`
+  if (mb >= 1024) return `${(mb / 1024).toFixed(2)} GB`
+  if (mb >= 1) return `${Math.round(mb)} MB`
+  return `${Math.max(1, Math.round(n / 1024))} KB` // sub-MB clips must not show "0 MB"
 }
 
 export type Tone = 'ok' | 'warn' | 'muted' | 'danger' | 'info'

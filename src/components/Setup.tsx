@@ -33,6 +33,7 @@ export function Setup({
   onAnalyze,
   analyzing,
   error,
+  warning,
 }: {
   form: SetupForm
   setForm: (f: SetupForm) => void
@@ -40,6 +41,8 @@ export function Setup({
   onAnalyze: () => void
   analyzing: boolean
   error?: string
+  /** Non-blocking environment problem (e.g. yt-dlp/ffmpeg missing). */
+  warning?: string
 }) {
   const set = <K extends keyof SetupForm>(k: K, v: SetupForm[K]) => setForm({ ...form, [k]: v })
   const dur = durationLabel(form.start, form.stop)
@@ -114,6 +117,13 @@ export function Setup({
           <Toggle checked={form.includeAnchor} onChange={(v) => set('includeAnchor', v)} label="Include anchor as reference" />
           <Toggle checked={form.exportXml} onChange={(v) => set('exportXml', v)} label="Export synced timeline (XML)" />
         </div>
+
+        {warning && (
+          <div className="flex items-start gap-2 rounded-xl border border-warn/30 bg-warn-soft px-3.5 py-2.5 text-sm text-warn">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{warning}</span>
+          </div>
+        )}
 
         {error && (
           <div className="flex items-start gap-2 rounded-xl border border-danger/30 bg-danger/10 px-3.5 py-2.5 text-sm text-danger">

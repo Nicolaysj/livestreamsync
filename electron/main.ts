@@ -428,9 +428,19 @@ function registerIpc() {
 
   ipcMain.handle(CH.checkTools, async () => {
     const { existsSync } = await import('node:fs')
+    const { spawnSync } = await import('node:child_process')
     const t = resolveTools(toolsDir())
-    // resolveTools returns an absolute path when found, else a bare command name.
-    const ok = (p: string) => (p.includes('/') || p.includes('\\')) && existsSync(p)
+    // resolveTools returns an absolute path when found, else a bare command name
+    // (dev: PATH lookup). For bare names, probe by spawning — only a failure to
+    // spawn at all (ENOENT/quarantined) counts as missing, whatever the exit code.
+    const ok = (p: string) => {
+      if (p.includes('/') || p.includes('\\')) return existsSync(p)
+      try {
+        return spawnSync(p, ['-version'], { windowsHide: true, timeout: 5000 }).error == null
+      } catch {
+        return false
+      }
+    }
     return { ytDlp: ok(t.ytDlp), ffmpeg: ok(t.ffmpeg) }
   })
 

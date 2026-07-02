@@ -122,6 +122,7 @@ function Body({ status }: { status: UpdateStatus }) {
           <p className={clsx(row, 'text-danger')}>
             <AlertCircle className="h-4 w-4" /> Couldn’t check for updates.
           </p>
+          {status.message && <p className="break-words text-xs text-faint">{status.message}</p>}
           <CheckButton />
         </div>
       )

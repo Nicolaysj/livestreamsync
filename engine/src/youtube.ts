@@ -24,7 +24,7 @@ function correctedStartSec(relSec: number, durSec: number): number {
   return relSec
 }
 
-const SEP = '' // unit separator unlikely to appear in titles
+const SEP = '\x1f' // ASCII unit separator - explicit escape so it can't drift from this comment (was \x01 while the comment claimed \x1f)
 
 export class YouTubeProvider implements Provider {
   readonly platform = 'youtube' as const

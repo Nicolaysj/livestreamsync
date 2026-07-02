@@ -1,7 +1,7 @@
 // Max-quality, exact-window slice download via yt-dlp (+ ffmpeg for HLS ranges).
 // Only the needed fragments are fetched, so this is fast even on multi-hour VODs.
 
-import { mkdir, stat, rm } from 'node:fs/promises'
+import { mkdir, stat, rm, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Tools } from './tools.js'
 import { stream } from './exec.js'
@@ -39,6 +39,32 @@ function formatSelector(platform: Platform, quality: Quality): string {
   if (quality === '1080') return 'best[height<=1080]'
   if (quality === '720') return 'best[height<=720]'
   return 'best'
+}
+
+/**
+ * Remove the output file plus any yt-dlp intermediates (`X.mp4.part`,
+ * `X.f299.mp4`, `X.mp4.ytdl`, …). Leaving them would leak gigabytes per
+ * cancelled DASH download and let a later run resume a `.part` file that
+ * belongs to a different time window. Retries because on Windows `taskkill`
+ * is asynchronous — a dying ffmpeg can still hold the file for a moment.
+ */
+async function cleanupArtifacts(outDir: string, fileName: string): Promise<void> {
+  const base = fileName.replace(/\.mp4$/, '')
+  const matches = (e: string) =>
+    e === fileName ||
+    (e.startsWith(`${base}.`) &&
+      (e.endsWith('.part') || e.endsWith('.ytdl') || /\.f\d+\.(mp4|m4a|webm)$/.test(e)))
+  for (let attempt = 0; attempt < 3; attempt++) {
+    let entries: string[]
+    try {
+      entries = (await readdir(outDir)).filter(matches)
+    } catch {
+      return
+    }
+    if (entries.length === 0) return
+    await Promise.all(entries.map((e) => rm(join(outDir, e), { force: true }).catch(() => {})))
+    await new Promise((r) => setTimeout(r, 500))
+  }
 }
 
 const TIME_RE = /time=(\d+):(\d+):(\d+(?:\.\d+)?)/ // ffmpeg progress
@@ -94,6 +120,12 @@ export async function downloadSegment(
   const args: string[] = [
     '--no-warnings',
     '--no-playlist',
+    // The filename encodes nothing about the time window, so an existing file
+    // from an earlier run MUST be overwritten — otherwise yt-dlp exits 0 without
+    // downloading and we'd report the old window's clip as this run's success.
+    // --no-continue likewise stops it resuming a stale .part from a different window.
+    '--force-overwrites',
+    '--no-continue',
     '-f',
     formatSelector(seg.platform, opts.quality),
     '--download-sections',
@@ -155,8 +187,8 @@ export async function downloadSegment(
   try {
     code = await handle.done
   } catch (err) {
-    // Stall watchdog or spawn failure rejects here — clean up the partial file too.
-    await rm(outputFile, { force: true }).catch(() => {})
+    // Stall watchdog or spawn failure rejects here — clean up partial output too.
+    await cleanupArtifacts(opts.outDir, fileName)
     throw err instanceof Error ? err : new Error('Download failed.')
   } finally {
     signal?.removeEventListener('abort', onAbort)
@@ -164,11 +196,14 @@ export async function downloadSegment(
 
   // Remove any partial/corrupt output before throwing, so a retry starts clean.
   const fail = async (err: Error): Promise<never> => {
-    await rm(outputFile, { force: true }).catch(() => {})
+    await cleanupArtifacts(opts.outDir, fileName)
     throw err
   }
   if (signal?.aborted) return fail(new Error('Cancelled'))
-  if (sawSubOnly) return fail(new SubOnlyError())
+  // Only trust sub-only hints on a failed exit: the hint strings can also appear
+  // in yt-dlp's own "Destination: <path>" echo when the channel name or prefix
+  // contains e.g. "members only" — that must not condemn a successful download.
+  if (code !== 0 && sawSubOnly) return fail(new SubOnlyError())
   if (code !== 0) return fail(new Error('Download failed — the VOD may be unavailable or expired.'))
 
   let bytes = 0

@@ -3,7 +3,7 @@ import electronUpdater from 'electron-updater'
 import { join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { existsSync } from 'node:fs'
-import { readFile, writeFile, mkdir, copyFile, chmod } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, copyFile, chmod, rename } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import { resolveTools, resetToolCache, isAllowedVodUrl } from '../engine/src/index.js'
 import { analyze, downloadAnalysis, exportTimeline } from '../engine/src/index.js'
@@ -39,9 +39,13 @@ function allowDir(dir: unknown): void {
 }
 function isPathAllowed(p: unknown): p is string {
   if (typeof p !== 'string' || !p) return false
-  const rp = resolve(p)
+  // Windows paths are case-insensitive; a renderer echoing "c:\users\…" for an
+  // allowed "C:\Users\…" must not get a spurious "folder is not permitted".
+  const norm = (s: string) => (process.platform === 'win32' ? s.toLowerCase() : s)
+  const rp = norm(resolve(p))
   for (const dir of allowedDirs) {
-    if (rp === dir || rp.startsWith(dir + sep)) return true
+    const d = norm(dir)
+    if (rp === d || rp.startsWith(d + sep)) return true
   }
   return false
 }
@@ -108,15 +112,19 @@ async function selfUpdateYtDlp(userTools: string, dest: string): Promise<void> {
 // We can't auto-install on an unsigned mac, but we CAN ask GitHub whether a newer release
 // exists and nudge the user to grab it. Pure version comparison, no Squirrel involved.
 function isNewerVersion(remote: string, local: string): boolean {
-  const parts = (v: string) => v.replace(/^v/, '').split('.').map((n) => parseInt(n, 10) || 0)
-  const r = parts(remote)
-  const l = parts(local)
-  for (let i = 0; i < Math.max(r.length, l.length); i++) {
-    const a = r[i] ?? 0
-    const b = l[i] ?? 0
+  const parse = (v: string) => {
+    const [core, ...rest] = v.replace(/^v/, '').split('-')
+    return { nums: core.split('.').map((n) => parseInt(n, 10) || 0), pre: rest.join('-') }
+  }
+  const r = parse(remote)
+  const l = parse(local)
+  for (let i = 0; i < Math.max(r.nums.length, l.nums.length); i++) {
+    const a = r.nums[i] ?? 0
+    const b = l.nums[i] ?? 0
     if (a !== b) return a > b
   }
-  return false
+  // Same core version: a prerelease predates its final release (0.3.0-rc1 < 0.3.0).
+  return !r.pre && !!l.pre
 }
 
 // Show a native OS notification at most once per new version (stamped in userData), so we
@@ -149,6 +157,9 @@ async function checkMacUpdate(win: BrowserWindow | null, fromUser: boolean): Pro
   try {
     const res = await fetch(RELEASES_API, {
       headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'LivestreamSync-Updater' },
+      // A stalled connection (captive portal, hung proxy) must not leave the
+      // updates menu stuck on "checking" forever.
+      signal: AbortSignal.timeout(15_000),
     })
     if (res.status === 404) return send({ state: 'none' }) // no releases published yet
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
@@ -175,13 +186,16 @@ function setupAutoUpdate(win: BrowserWindow): void {
   if (isMac) {
     // Unsigned mac: no in-app install, but check GitHub on launch and notify (dot + a
     // one-time native notification) so users know when to grab the new build.
-    setTimeout(() => void checkMacUpdate(win, false), 3000)
+    setTimeout(() => void checkMacUpdate(mainWindow ?? win, false), 3000)
     return
   }
   autoUpdater.autoDownload = false
   autoUpdater.autoInstallOnAppQuit = false
+  // Send to the *current* window, not the one captured at setup — on macOS the
+  // window can be closed and recreated via the Dock while the app keeps running.
   const send = (s: UpdateStatus) => {
-    if (!win.isDestroyed()) win.webContents.send(CH.updateStatus, s)
+    const w = mainWindow
+    if (w && !w.isDestroyed()) w.webContents.send(CH.updateStatus, s)
   }
   autoUpdater.on('checking-for-update', () => send({ state: 'checking' }))
   autoUpdater.on('update-available', (i) => send({ state: 'available', version: i.version }))
@@ -250,6 +264,19 @@ function createWindow() {
   })
 }
 
+// Single instance: two copies would race on userData — worst case one instance
+// rewrites tools/yt-dlp.exe via `-U` while the other is executing it, and both
+// clobber roster.json. Focus the existing window instead.
+if (!app.requestSingleInstanceLock()) {
+  app.quit()
+}
+app.on('second-instance', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.focus()
+  }
+})
+
 app.whenReady().then(() => {
   session.defaultSession.webRequest.onHeadersReceived((details, cb) => {
     cb({
@@ -272,6 +299,14 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+// Abort any in-flight job on quit. Without this the detached yt-dlp/ffmpeg trees
+// outlive the app and keep downloading (and holding partial files) indefinitely —
+// killTree signals process groups on POSIX and hands off to taskkill on Windows,
+// both of which complete even as we exit.
+app.on('before-quit', () => {
+  currentAbort?.abort()
 })
 
 function registerIpc() {
@@ -345,11 +380,30 @@ function registerIpc() {
     if (isPathAllowed(p)) shell.showItemInFolder(resolve(p))
   })
 
+  // Roster entries cross the trust boundary from the renderer: shape-check every
+  // field (and cap sizes) so a compromised renderer can't persist multi-GB junk,
+  // and so a torn file never round-trips back into the UI.
+  const asRosterEntry = (v: unknown): RosterEntry | null => {
+    if (typeof v !== 'object' || v === null) return null
+    const o = v as Record<string, unknown>
+    const str = (x: unknown, max: number) => (typeof x === 'string' && x.length <= max ? x : undefined)
+    const id = str(o.id, 200)
+    const displayName = str(o.displayName, 200)
+    if (!id || !displayName) return null
+    const entry: RosterEntry = { id, displayName }
+    const twitch = str(o.twitch, 100)
+    const youtube = str(o.youtube, 100)
+    if (twitch) entry.twitch = twitch
+    if (youtube) entry.youtube = youtube
+    return entry
+  }
+
   ipcMain.handle(CH.getRoster, async (): Promise<RosterEntry[]> => {
     try {
       const txt = await readFile(rosterPath(), 'utf8')
       const data = JSON.parse(txt)
-      return Array.isArray(data) ? data : []
+      if (!Array.isArray(data)) return []
+      return data.map(asRosterEntry).filter((e): e is RosterEntry => e !== null)
     } catch {
       return []
     }
@@ -357,8 +411,13 @@ function registerIpc() {
 
   ipcMain.handle(CH.saveRoster, async (_e, roster: unknown) => {
     if (!Array.isArray(roster)) return
+    const entries = roster.slice(0, 200).map(asRosterEntry).filter((e): e is RosterEntry => e !== null)
     await mkdir(app.getPath('userData'), { recursive: true })
-    await writeFile(rosterPath(), JSON.stringify(roster, null, 2), 'utf8')
+    // Write-then-rename so a crash mid-write can't leave truncated JSON that
+    // silently wipes the user's roster on the next read.
+    const tmp = `${rosterPath()}.tmp`
+    await writeFile(tmp, JSON.stringify(entries, null, 2), 'utf8')
+    await rename(tmp, rosterPath())
   })
 
   ipcMain.handle(CH.getDefaults, async () => {

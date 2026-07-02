@@ -79,6 +79,7 @@
         ]
       }
     ],
+    "afterPack": "build/mac-adhoc-sign.cjs",
     "directories": {
       "output": "release",
       "buildResources": "build/resources"

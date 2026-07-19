@@ -84,60 +84,87 @@ export function buildFcpXml(opts: FcpExportOptions): string {
 
   const rate = rateBlock(fps, ntsc)
 
+  // Without an explicit <pixelaspectratio>, Premiere falls back to its DV-preset
+  // guess (users saw 1.0940 D1/DV PAL) instead of assuming square pixels.
+  const videoChars =
+    `<samplecharacteristics>${rate}<width>${width}</width><height>${height}</height>` +
+    `<anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio>` +
+    `<fielddominance>none</fielddominance></samplecharacteristics>`
+
   const fileDef = (c: Placed): string =>
     `<file id="${c.fileId}"><name>${xmlEscape(c.name)}</name>` +
     `<pathurl>${pathUrl(c.file)}</pathurl>${rate}` +
     `<duration>${c.durFrames}</duration>` +
-    `<media><video><samplecharacteristics>${rate}<width>${width}</width><height>${height}</height></samplecharacteristics></video>` +
+    `<media><video>${videoChars}</video>` +
     `<audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics><channelcount>2</channelcount></audio></media></file>`
+
+  // FCP7 link semantics (Apple DTD): a valid link is linkclipref OR the full
+  // tuple mediatype+trackindex+clipindex — our old half-tuple (no clipindex)
+  // was discarded by Premiere, importing clips unlinked. Premiere's own exports
+  // repeat the complete link array (self-link included) in every linked
+  // clipitem, with stereo audio exploded into one clipitem per channel.
+  const vId = (i: number) => `clipitem-v-${i + 1}`
+  const aId = (i: number, ch: 1 | 2) => `clipitem-a${ch}-${i + 1}`
+  const linkArray = (c: Placed): string =>
+    `<link><linkclipref>${vId(c.idx)}</linkclipref><mediatype>video</mediatype><trackindex>${c.idx + 1}</trackindex><clipindex>1</clipindex></link>` +
+    `<link><linkclipref>${aId(c.idx, 1)}</linkclipref><mediatype>audio</mediatype><trackindex>${2 * c.idx + 1}</trackindex><clipindex>1</clipindex><groupindex>1</groupindex></link>` +
+    `<link><linkclipref>${aId(c.idx, 2)}</linkclipref><mediatype>audio</mediatype><trackindex>${2 * c.idx + 2}</trackindex><clipindex>1</clipindex><groupindex>1</groupindex></link>`
 
   const videoTracks = computed
     .map((c) => {
-      const vId = `clipitem-v-${c.idx + 1}`
-      const aId = `clipitem-a-${c.idx + 1}`
       const end = c.startFrame + c.durFrames
       return (
         `<track>` +
-        `<clipitem id="${vId}"><name>${xmlEscape(c.name)}</name>${rate}` +
+        `<clipitem id="${vId(c.idx)}"><name>${xmlEscape(c.name)}</name>${rate}` +
         `<start>${c.startFrame}</start><end>${end}</end><in>0</in><out>${c.durFrames}</out>` +
         labelBlock(c.idx) +
         fileDef(c) +
-        `<link><linkclipref>${vId}</linkclipref><mediatype>video</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
-        `<link><linkclipref>${aId}</linkclipref><mediatype>audio</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
+        linkArray(c) +
         `</clipitem></track>`
       )
     })
     .join('')
 
+  // Stereo = two exploded audio clipitems (source channel 1/2 on adjacent
+  // tracks), mirroring Premiere's native representation so imports link + pan
+  // correctly. The premiere* attributes are Premiere-isms other NLEs ignore.
   const audioTracks = computed
     .map((c) => {
-      const vId = `clipitem-v-${c.idx + 1}`
-      const aId = `clipitem-a-${c.idx + 1}`
       const end = c.startFrame + c.durFrames
-      return (
-        `<track>` +
-        `<clipitem id="${aId}"><name>${xmlEscape(c.name)}</name>${rate}` +
+      const channelItem = (ch: 1 | 2): string =>
+        `<track currentExplodedTrackIndex="${ch - 1}" totalExplodedTrackCount="2" premiereTrackType="Stereo">` +
+        `<outputchannelindex>${ch}</outputchannelindex>` +
+        `<clipitem id="${aId(c.idx, ch)}" premiereChannelType="stereo"><name>${xmlEscape(c.name)}</name>${rate}` +
         `<start>${c.startFrame}</start><end>${end}</end><in>0</in><out>${c.durFrames}</out>` +
         labelBlock(c.idx) +
         `<file id="${c.fileId}"/>` +
-        `<sourcetrack><mediatype>audio</mediatype><trackindex>1</trackindex></sourcetrack>` +
-        `<link><linkclipref>${vId}</linkclipref><mediatype>video</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
-        `<link><linkclipref>${aId}</linkclipref><mediatype>audio</mediatype><trackindex>${c.idx + 1}</trackindex></link>` +
+        `<sourcetrack><mediatype>audio</mediatype><trackindex>${ch}</trackindex></sourcetrack>` +
+        linkArray(c) +
         `</clipitem></track>`
-      )
+      return channelItem(1) + channelItem(2)
     })
     .join('')
+
+  // Every full-coverage clip's content starts pad seconds before the requested
+  // window, so the moment all POVs are wall-clock aligned sits pad*fps frames
+  // into the timeline. Premiere imports sequence-level markers (clip-level ones
+  // it ignores), so one marker across all tracks marks the sync point.
+  const syncMarker =
+    `<marker><name>Sync point</name>` +
+    `<comment>All POVs are wall-clock aligned from here (requested window start).</comment>` +
+    `<in>${Math.round(pad * fps)}</in><out>-1</out></marker>`
 
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE xmeml>\n` +
     `<xmeml version="5">\n` +
-    `<sequence id="livestreamsync-seq">` +
+    `<sequence id="livestreamsync-seq" explodedTracks="true">` +
     `<name>${xmlEscape(opts.sequenceName)}</name>` +
     `<duration>${seqDuration}</duration>${rate}` +
     `<media>` +
-    `<video><format><samplecharacteristics>${rate}<width>${width}</width><height>${height}</height></samplecharacteristics></format>${videoTracks}</video>` +
+    `<video><format>${videoChars}</format>${videoTracks}</video>` +
     `<audio>${audioTracks}</audio>` +
     `</media>` +
+    syncMarker +
     `</sequence>\n</xmeml>\n`
   )
 }

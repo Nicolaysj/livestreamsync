@@ -13,7 +13,15 @@ All notable changes, written for the people who use LivestreamSync — not commi
 
 ## Unreleased
 
-_Nothing yet._
+Timeline export polish — thanks ex for the detailed import notes!
+
+- **Correct pixel aspect ratio** — imported sequences now come in at square pixels
+  (1.0) instead of Premiere guessing a DV preset (the mysterious 1.0940).
+- **Video and audio import linked** — clips no longer need manual re-linking after
+  import; stereo audio now comes in the way Premiere expects it.
+- **Sync point marker** — every exported timeline now carries a marker at the exact
+  moment all POVs are aligned (your requested start time), so you can verify sync
+  at a glance.
 
 ## [0.4.0] - 2026-07-02
 

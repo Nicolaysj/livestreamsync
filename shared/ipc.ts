@@ -24,6 +24,7 @@ export const CH = {
   checkTools: 'livestreamsync:checkTools',
   progress: 'livestreamsync:progress',
   getVersion: 'livestreamsync:getVersion',
+  openKofi: 'livestreamsync:openKofi',
   updateStatus: 'livestreamsync:update:status',
   updateCheck: 'livestreamsync:update:check',
   updateDownload: 'livestreamsync:update:download',
@@ -79,6 +80,8 @@ export interface LivestreamSyncApi {
   checkTools(): Promise<ToolStatus>
   onProgress(cb: (ev: ProgressEvent) => void): () => void
   getVersion(): Promise<string>
+  /** Open the developer's ko-fi page in the system browser (URL is fixed in main). */
+  openKofi(): void
   onUpdateStatus(cb: (s: UpdateStatus) => void): () => void
   checkForUpdate(): void
   downloadUpdate(): void

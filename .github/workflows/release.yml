@@ -29,6 +29,15 @@ jobs:
             echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $PKG. Bump the version, retag, and push again."
             exit 1
           fi
+      # Release notes are user-facing and hand-written — a release without a
+      # changelog section would fall back to raw commit lists, so refuse it.
+      - name: Verify CHANGELOG.md has notes for this version
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          if ! grep -q "^## \[$V\]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no '## [$V]' section. Write user-facing notes (rename Unreleased), commit, retag."
+            exit 1
+          fi
 
   build-windows:
     needs: guard
@@ -92,14 +101,30 @@ jobs:
     needs: [build-windows, build-mac]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           path: dist-artifacts
+      # User-facing notes from CHANGELOG.md, not auto-generated commit lists:
+      # take everything from this version's heading to the next "## [" heading.
+      - name: Extract release notes from CHANGELOG.md
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          awk -v ver="$V" '
+            /^## \[/ { if (found) exit; if (index($0, "## [" ver "]") == 1) { found = 1; next } }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+          if ! grep -q '[^[:space:]]' release-notes.md; then
+            echo "::error::Extracted empty release notes for $V from CHANGELOG.md."
+            exit 1
+          fi
+          echo "--- release notes ---"; cat release-notes.md
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: dist-artifacts/**/*
-          generate_release_notes: true
+          body_path: release-notes.md
+          generate_release_notes: false
           # A glob that matches nothing must fail the publish, not silently
           # create an empty release ("atomic publish" promise above).
           fail_on_unmatched_files: true

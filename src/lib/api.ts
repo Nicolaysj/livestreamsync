@@ -78,7 +78,7 @@ const mockApi: LivestreamSyncApi = {
           mockProgressCb?.({ handle: p.handle, platform: p.platform, phase: 'downloading', percent: pct, speed: `${(40 + Math.round(pct / 3))} MB/s` })
           await delay(120)
         }
-        p.outputFile = `C:\\Users\\You\\Videos\\LivestreamSync\\LivestreamSync_${p.displayName}.mp4`
+        p.outputFile = `C:\\Users\\You\\Videos\\LivestreamSync\\QuarterJade 2026-06-23 23.30.10\\LivestreamSync_${p.displayName}.mp4`
         p.fileBytes = 690 * 1024 * 1024
         mockProgressCb?.({ handle: p.handle, platform: p.platform, phase: 'done', percent: 100 })
       }),
@@ -86,7 +86,7 @@ const mockApi: LivestreamSyncApi = {
     return req.analysis.povs
   },
   cancel: async () => {},
-  exportTimeline: async () => 'C:\\Users\\You\\Videos\\LivestreamSync\\LivestreamSync_timeline.xml',
+  exportTimeline: async () => 'C:\\Users\\You\\Videos\\LivestreamSync\\QuarterJade 2026-06-23 23.30.10\\LivestreamSync_timeline.xml',
   pickFolder: async () => 'C:\\Users\\You\\Videos\\LivestreamSync',
   openFolder: async () => {},
   revealFile: async () => {},
@@ -101,6 +101,9 @@ const mockApi: LivestreamSyncApi = {
     }
   },
   getVersion: async () => 'dev',
+  openKofi: () => {
+    window.open('https://ko-fi.com/nixolay', '_blank')
+  },
   onUpdateStatus: () => () => {},
   checkForUpdate: () => {},
   downloadUpdate: () => {},

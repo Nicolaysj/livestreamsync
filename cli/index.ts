@@ -1,5 +1,5 @@
 // LivestreamSync v0 — headless CLI. Drives the engine end-to-end.
-//   tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]
+//   tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml] [--chat]
 
 import process from 'node:process'
 import { resolve } from 'node:path'
@@ -74,7 +74,7 @@ async function main() {
   const { positionals, flags } = parseArgs(process.argv.slice(2))
   const [anchorUrl, startRaw, stopRaw] = positionals
   if (!anchorUrl || !startRaw || !stopRaw) {
-    console.error('Usage: tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml]')
+    console.error('Usage: tsx cli/index.ts <anchorUrl> <start> <stop|end> --streamers a,b,c [--out DIR] [--quality source|1080|720] [--no-anchor] [--xml] [--chat]')
     process.exit(2)
   }
 
@@ -145,7 +145,7 @@ async function main() {
   })
 
   const pct: Record<string, number> = {}
-  await downloadAnalysis(analysis, { outDir, quality, padSec: 4, filenamePrefix: 'LivestreamSync' }, ctx, {
+  await downloadAnalysis(analysis, { outDir, quality, padSec: 4, filenamePrefix: 'LivestreamSync', chat: !!flags.chat }, ctx, {
     onProgress: (ev) => {
       if (ev.phase === 'downloading' && ev.percent != null) {
         const prev = pct[ev.handle] ?? -1
@@ -163,7 +163,7 @@ async function main() {
 
   console.log(C.bold('\nResults:'))
   for (const p of analysis.povs) {
-    if (p.outputFile) console.log(`  ${C.green('✓')} ${p.displayName.padEnd(18)} ${C.dim(p.outputFile)} ${C.dim(fmtBytes(p.fileBytes))}`)
+    if (p.outputFile) console.log(`  ${C.green('✓')} ${p.displayName.padEnd(18)} ${C.dim(p.outputFile)} ${C.dim(fmtBytes(p.fileBytes))}${p.chatFile ? C.cyan(' +chat') : ''}`)
     else if (p.selected) console.log(`  ${C.red('✕')} ${p.displayName.padEnd(18)} ${C.dim(p.reason || '')}`)
   }
 

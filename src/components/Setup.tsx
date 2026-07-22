@@ -13,6 +13,7 @@ export interface SetupForm {
   quality: 'source' | '1080' | '720'
   includeAnchor: boolean
   exportXml: boolean
+  chat: boolean
 }
 
 function durationLabel(start: string, stop: string): string | null {
@@ -115,9 +116,10 @@ export function Setup({
           </div>
         </div>
 
-        <div className="flex items-center gap-6 px-1">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-1">
           <Toggle checked={form.includeAnchor} onChange={(v) => set('includeAnchor', v)} label="Include anchor as reference" />
           <Toggle checked={form.exportXml} onChange={(v) => set('exportXml', v)} label="Export synced timeline (XML)" />
+          <Toggle checked={form.chat} onChange={(v) => set('chat', v)} label="Download Twitch chat" />
         </div>
 
         {warning && (

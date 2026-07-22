@@ -1,4 +1,4 @@
-import { Minus, Square, X } from 'lucide-react'
+import { Minus, Square, X, Coffee } from 'lucide-react'
 import clsx from 'clsx'
 import { api } from '../lib/api'
 import { Logo } from './bits'
@@ -17,6 +17,14 @@ export function TitleBar() {
         </span>
       </div>
       <div className="no-drag flex items-center gap-1">
+        <button
+          onClick={() => api.openKofi()}
+          title="Buy me a coffee"
+          aria-label="Buy me a coffee"
+          className="flex h-7 w-8 items-center justify-center rounded-lg text-accent-2 transition-colors hover:bg-accent/15"
+        >
+          <Coffee className="h-4 w-4" />
+        </button>
         <span className={isMac ? '' : 'mr-2'}>
           <UpdatesMenu />
         </span>

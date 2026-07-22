@@ -13,6 +13,12 @@ All notable changes, written for the people who use LivestreamSync — not commi
 
 ## Unreleased
 
+- **Twitch chat download** — a new toggle grabs each POV's chat for exactly your
+  synced time window, saved next to the clip in two formats: a `.srt` you can drop
+  straight onto the timeline as captions, and a `.chat.json` compatible with
+  TwitchDownloader if you want to render a full chat overlay. No extra downloads,
+  works per streamer, trimmed to the clip. (CLI: `--chat`.)
+
 Timeline export polish — thanks ex for the detailed import notes!
 
 - **Correct pixel aspect ratio** — imported sequences now come in at square pixels

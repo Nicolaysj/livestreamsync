@@ -19,6 +19,7 @@ const DEFAULT_FORM: SetupForm = {
   quality: 'source',
   includeAnchor: true,
   exportXml: true,
+  chat: false,
 }
 
 export default function App() {
@@ -138,7 +139,7 @@ export default function App() {
     try {
       const povs = await api.download({
         analysis,
-        options: { outDir: form.outDir, quality: form.quality, padSec: 4, filenamePrefix: 'LivestreamSync' },
+        options: { outDir: form.outDir, quality: form.quality, padSec: 4, filenamePrefix: 'LivestreamSync', chat: form.chat },
       })
       if (jobIdRef.current !== myJob) return // superseded by a cancel/new job
       const updated = { ...analysis, povs: [...povs] }

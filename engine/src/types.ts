@@ -56,6 +56,8 @@ export interface POVResult {
   selected: boolean
   outputFile?: string
   fileBytes?: number
+  /** Path to the downloaded chat JSON (Twitch POVs with chat enabled). */
+  chatFile?: string
 }
 
 export interface StreamerRef {
@@ -90,6 +92,8 @@ export interface DownloadOptions {
   quality: Quality
   padSec: number
   filenamePrefix?: string
+  /** Also download Twitch chat for each POV, trimmed to the padded window. */
+  chat?: boolean
 }
 
 export type ProgressPhase = 'queued' | 'resolving' | 'downloading' | 'done' | 'error' | 'skipped'

@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import type { ProviderContext } from './providers.js'
 import { makeProviders, resolveAnchor } from './providers.js'
 import { downloadSegment, SubOnlyError } from './download.js'
+import { downloadChat } from './chat.js'
 import { buildFcpXml } from './fcpxml.js'
 import { inferPlatform, sanitizeFilenamePart } from './validate.js'
 import { secToTimecode } from './time.js'
@@ -162,6 +163,17 @@ export async function downloadAnalysis(
       )
       p.outputFile = res.outputFile
       p.fileBytes = res.bytes
+      // Chat rides along after the clip: non-fatal — a chat hiccup must never
+      // fail a POV whose video downloaded fine.
+      if (opts.chat && p.platform === 'twitch' && !signal?.aborted) {
+        try {
+          const chat = await downloadChat(p.segment!, p.displayName, res.outputFile, opts, signal)
+          p.chatFile = chat.jsonFile
+          ctx.log?.(`chat ${p.handle}: ${chat.commentCount} messages`)
+        } catch (err) {
+          ctx.log?.(`chat ${p.handle} failed (video kept): ${String(err)}`)
+        }
+      }
       emit(p, { phase: 'done', percent: 100 })
     } catch (err) {
       if (err instanceof SubOnlyError) {

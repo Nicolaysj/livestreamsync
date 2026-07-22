@@ -13,6 +13,10 @@ All notable changes, written for the people who use LivestreamSync — not commi
 
 ## Unreleased
 
+_Nothing yet._
+
+## [0.5.0] - 2026-07-22
+
 - **Twitch chat download** — a new toggle grabs each POV's chat for exactly your
   synced time window, saved next to the clip in two formats: a `.srt` you can drop
   straight onto the timeline as captions, and a `.chat.json` compatible with

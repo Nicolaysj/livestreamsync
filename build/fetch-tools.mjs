@@ -39,11 +39,13 @@ const YTDLP_URL = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TA
 const YTDLP_SUMS = `https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_TAG}/SHA2-256SUMS`
 
 // ffmpeg for Windows from BtbN/FFmpeg-Builds (GitHub CDN — fast & reliable; gyan.dev stalls).
-// Static "win64-gpl" build = self-contained ffmpeg.exe + ffprobe.exe, no DLLs. Pinned to a
-// dated autobuild and verified against a hardcoded SHA-256 (BtbN ships no .sha256 sidecar).
-const FFMPEG_WIN_URL =
-  'https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-06-28-13-24/ffmpeg-N-125331-g87bd15dc3c-win64-gpl.zip'
-const FFMPEG_WIN_SHA = '486746b729340a189e867895c348b0240c8f37edf8c9e0f9d648361a951973a5'
+// Static "win64-gpl" build = self-contained ffmpeg.exe + ffprobe.exe, no DLLs.
+// NOT pinned to a dated autobuild: BtbN prunes those after ~2 weeks (the v0.5.0 release
+// build died on a 404'd pin). The rolling "latest" release always exists and ships a
+// checksums.sha256 asset — same-channel verification, exactly like yt-dlp's SHA2-256SUMS.
+const FFMPEG_WIN_ASSET = 'ffmpeg-master-latest-win64-gpl.zip'
+const FFMPEG_WIN_URL = `https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_WIN_ASSET}`
+const FFMPEG_WIN_SUMS = 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/checksums.sha256'
 
 // macOS: Martin Riedl's build server — static arm64 Mach-O with a per-file .sha256 sidecar.
 // Pinned to a dated build for reproducibility (their /redirect/latest is occasionally flaky).
@@ -113,8 +115,11 @@ async function fetchWindows() {
   }
 
   if (!existsSync(join(TOOLS, 'ffmpeg.exe')) || !existsSync(join(TOOLS, 'ffprobe.exe'))) {
-    const zipBuf = await getBuffer(FFMPEG_WIN_URL)
-    verify(zipBuf, FFMPEG_WIN_SHA, 'ffmpeg-win64-gpl.zip')
+    const [zipBuf, sums] = await Promise.all([getBuffer(FFMPEG_WIN_URL), getText(FFMPEG_WIN_SUMS)])
+    // checksums.sha256 lines: "<hex>  <asset-name>" — match the exact asset.
+    const line = sums.split('\n').find((l) => l.trim().split(/\s+/)[1] === FFMPEG_WIN_ASSET)
+    if (!line) throw new Error(`${FFMPEG_WIN_ASSET} not listed in checksums.sha256`)
+    verify(zipBuf, line.trim().split(/\s+/)[0], FFMPEG_WIN_ASSET)
     const zip = join(TOOLS, '_ffmpeg.zip')
     const tmp = join(TOOLS, '_ffmpeg')
     await writeFile(zip, zipBuf)

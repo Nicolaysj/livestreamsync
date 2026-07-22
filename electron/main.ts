@@ -445,6 +445,8 @@ function registerIpc() {
   })
 
   ipcMain.handle(CH.getVersion, () => app.getVersion())
+  // Hardcoded URL — the renderer can't pass one, so this can never open anything else.
+  ipcMain.on(CH.openKofi, () => void shell.openExternal('https://ko-fi.com/nixolay'))
   ipcMain.on(CH.updateCheck, (e) => {
     if (isMac) {
       // Signing-free GitHub version check; surfaces "available" (with the version) or "none".

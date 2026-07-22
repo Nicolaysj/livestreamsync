@@ -89,7 +89,12 @@ export default function App() {
         streamers: form.handles.map((handle) => ({ handle })),
         includeAnchor: form.includeAnchor,
       })
-      setAnalysis(result)
+      // Seed per-POV chat choice from the Setup default; the Review screen's
+      // chat pills let the user override per creator.
+      setAnalysis({
+        ...result,
+        povs: result.povs.map((p) => (p.platform === 'twitch' ? { ...p, chatSelected: form.chat } : p)),
+      })
       setProgress({})
       setXmlPath(undefined)
       setStage('review')
@@ -106,6 +111,16 @@ export default function App() {
       ...analysis,
       povs: analysis.povs.map((p) =>
         p.handle === target.handle && p.platform === target.platform ? { ...p, selected: !p.selected } : p,
+      ),
+    })
+  }
+
+  const toggleChat = (target: POVResult) => {
+    if (!analysis) return
+    setAnalysis({
+      ...analysis,
+      povs: analysis.povs.map((p) =>
+        p.handle === target.handle && p.platform === target.platform ? { ...p, chatSelected: !p.chatSelected } : p,
       ),
     })
   }
@@ -169,6 +184,15 @@ export default function App() {
     }
   }
 
+  // Downloads land in a per-session subfolder now — "Open folder" should open
+  // that, not the root. Derived from any clip path (no node:path in renderer).
+  const sessionDir = (): string => {
+    const f = analysisRef.current?.povs.find((p) => p.outputFile)?.outputFile
+    if (!f) return form.outDir
+    const cut = Math.max(f.lastIndexOf('\\'), f.lastIndexOf('/'))
+    return cut > 0 ? f.slice(0, cut) : form.outDir
+  }
+
   const newJob = () => {
     setStage('setup')
     setAnalysis(null)
@@ -212,6 +236,7 @@ export default function App() {
                   setStage('setup')
                 }}
                 onToggle={toggle}
+                onToggleChat={toggleChat}
                 onDownload={runDownload}
               />
             )}
@@ -224,7 +249,7 @@ export default function App() {
                 exporting={exporting}
                 exportError={exportError}
                 onExport={() => runExport()}
-                onOpenFolder={() => api.openFolder(form.outDir)}
+                onOpenFolder={() => api.openFolder(sessionDir())}
                 onReveal={(f) => api.revealFile(f)}
                 onNewJob={newJob}
                 onCancel={() => {

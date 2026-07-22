@@ -1,4 +1,4 @@
-import { ChevronLeft, Download, Check, AlertCircle } from 'lucide-react'
+import { ChevronLeft, Download, Check, AlertCircle, MessageSquare } from 'lucide-react'
 import { clsx } from 'clsx'
 import type { Analysis, POVResult } from '../../engine/src/types'
 import { Avatar, StatusChip } from './bits'
@@ -11,6 +11,7 @@ export function Review({
   error,
   onBack,
   onToggle,
+  onToggleChat,
   onDownload,
 }: {
   analysis: Analysis
@@ -18,6 +19,7 @@ export function Review({
   error?: string
   onBack: () => void
   onToggle: (p: POVResult) => void
+  onToggleChat: (p: POVResult) => void
   onDownload: () => void
 }) {
   const found = analysis.povs.filter((p) => STATUS_META[p.status].downloadable).length
@@ -74,6 +76,35 @@ export function Review({
                     {p.segment ? `In sync at ${secToTimecode(p.segment.offsetSec)} in their VOD` : p.reason || meta.label}
                   </div>
                 </div>
+                {p.platform === 'twitch' && can && (
+                  // span, not <button>: the whole row is already a button and
+                  // nested buttons are invalid HTML (React warns, focus breaks).
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={!!p.chatSelected}
+                    title={p.chatSelected ? 'Chat will be downloaded for this POV' : 'Download chat for this POV'}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onToggleChat(p)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        onToggleChat(p)
+                      }
+                    }}
+                    className={clsx(
+                      'flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors',
+                      p.chatSelected
+                        ? 'border-accent-line bg-accent/15 text-accent-2'
+                        : 'border-border text-faint hover:border-accent/40 hover:text-muted',
+                    )}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                  </span>
+                )}
                 <StatusChip status={p.status} />
               </button>
             )

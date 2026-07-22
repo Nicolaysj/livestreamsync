@@ -18,6 +18,15 @@ All notable changes, written for the people who use LivestreamSync — not commi
   straight onto the timeline as captions, and a `.chat.json` compatible with
   TwitchDownloader if you want to render a full chat overlay. No extra downloads,
   works per streamer, trimmed to the clip. (CLI: `--chat`.)
+- **Chat per creator** — on the review screen, each Twitch POV has its own chat
+  pill so you can pick exactly whose chat to grab; the Setup toggle just sets the
+  default for the run.
+- **A folder per session** — every download now lands in its own subfolder inside
+  your save location, named after the anchor and the window start (re-running the
+  same window reuses its folder instead of piling up copies). The timeline XML is
+  written there too, and "Open folder" takes you straight to it.
+- **Support the project** — a little coffee button in the title bar, if
+  LivestreamSync saves you time and you feel like saying thanks.
 
 Timeline export polish — thanks ex for the detailed import notes!
 

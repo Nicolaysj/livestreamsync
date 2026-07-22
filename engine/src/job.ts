@@ -2,7 +2,7 @@
 // → export. A single streamer failing never aborts the run.
 
 import { writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import type { ProviderContext } from './providers.js'
 import { makeProviders, resolveAnchor } from './providers.js'
 import { downloadSegment, SubOnlyError } from './download.js'
@@ -129,6 +129,16 @@ export async function downloadAnalysis(
   const emit = (p: POVResult, ev: Omit<ProgressEvent, 'handle' | 'platform'>) =>
     callbacks.onProgress?.({ handle: p.handle, platform: p.platform, ...ev })
 
+  // Each session gets its own subfolder, named after the anchor + window start
+  // (local time). Deliberately deterministic: re-running the same window lands
+  // in the same folder and overwrites — no folder spam from retries.
+  const t = new Date(analysis.window.startMs)
+  const p2 = (n: number) => String(n).padStart(2, '0')
+  const sessionName = sanitizeFilenamePart(
+    `${analysis.anchor.channel} ${t.getFullYear()}-${p2(t.getMonth() + 1)}-${p2(t.getDate())} ${p2(t.getHours())}.${p2(t.getMinutes())}.${p2(t.getSeconds())}`,
+  )
+  const sessionOpts: DownloadOptions = { ...opts, outDir: join(opts.outDir, sessionName) }
+
   // Disambiguate output filenames when two POVs sanitize to the same display name,
   // so concurrent downloads never race to write the same file.
   const nameCounts = new Map<string, number>()
@@ -156,7 +166,7 @@ export async function downloadAnalysis(
         ctx.tools,
         p.segment!,
         p.displayName,
-        opts,
+        sessionOpts,
         (prog) => emit(p, { phase: 'downloading', percent: prog.percent, speed: prog.speed, eta: prog.eta }),
         signal,
         disambiguatorFor(p),
@@ -164,10 +174,11 @@ export async function downloadAnalysis(
       p.outputFile = res.outputFile
       p.fileBytes = res.bytes
       // Chat rides along after the clip: non-fatal — a chat hiccup must never
-      // fail a POV whose video downloaded fine.
-      if (opts.chat && p.platform === 'twitch' && !signal?.aborted) {
+      // fail a POV whose video downloaded fine. Per-POV choice wins over the
+      // job-wide default when set (Review-screen chat pills).
+      if ((p.chatSelected ?? opts.chat) && p.platform === 'twitch' && !signal?.aborted) {
         try {
-          const chat = await downloadChat(p.segment!, p.displayName, res.outputFile, opts, signal)
+          const chat = await downloadChat(p.segment!, p.displayName, res.outputFile, sessionOpts, signal)
           p.chatFile = chat.jsonFile
           ctx.log?.(`chat ${p.handle}: ${chat.commentCount} messages`)
         } catch (err) {
@@ -221,7 +232,9 @@ export async function exportTimeline(analysis: Analysis, opts: ExportOptions): P
     })),
   })
 
-  const xmlPath = join(opts.outDir, 'LivestreamSync_timeline.xml')
+  // The timeline belongs next to the clips it references — with per-session
+  // subfolders that's the session dir, not the root outDir the caller knows.
+  const xmlPath = join(dirname(done[0].outputFile!), 'LivestreamSync_timeline.xml')
   await writeFile(xmlPath, xml, 'utf8')
   return xmlPath
 }

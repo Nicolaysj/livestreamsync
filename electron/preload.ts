@@ -21,6 +21,7 @@ const api: LivestreamSyncApi = {
     return () => ipcRenderer.removeListener(CH.progress, listener)
   },
   getVersion: () => ipcRenderer.invoke(CH.getVersion),
+  openKofi: () => ipcRenderer.send(CH.openKofi),
   onUpdateStatus: (cb) => {
     const listener = (_e: unknown, s: UpdateStatus) => cb(s)
     ipcRenderer.on(CH.updateStatus, listener)

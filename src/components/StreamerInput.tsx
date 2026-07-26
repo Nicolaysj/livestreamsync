@@ -23,17 +23,22 @@ function isPlausibleHandle(h: string): boolean {
   return isValidTwitchLogin(h) || isValidYouTubeHandle(h) || (!h.startsWith('@') && isValidYouTubeHandle(`@${h}`))
 }
 
+const VISIBLE_ROSTER = 8
+
 export function StreamerInput({
   handles,
   onChange,
   roster,
+  onRemoveRoster,
 }: {
   handles: string[]
   onChange: (h: string[]) => void
   roster: RosterEntry[]
+  onRemoveRoster: (id: string) => void
 }) {
   const [draft, setDraft] = useState('')
   const [hint, setHint] = useState<string | undefined>()
+  const [showAllRoster, setShowAllRoster] = useState(false)
 
   const add = (raw: string) => {
     const tokens = raw.split(/[,\s]+/).map((t) => t.trim()).filter(Boolean)
@@ -108,19 +113,37 @@ export function StreamerInput({
           <span className="mr-1 inline-flex items-center gap-1 text-xs text-faint">
             <Users className="h-3.5 w-3.5" /> Roster:
           </span>
-          {rosterSuggestions.map((r) => {
+          {(showAllRoster ? rosterSuggestions : rosterSuggestions.slice(0, VISIBLE_ROSTER)).map((r) => {
             const h = (r.twitch || r.youtube)!
             return (
-              <button
-                key={r.id}
-                onClick={() => add(h)}
-                className="inline-flex items-center gap-1 rounded-lg border border-border bg-panel/60 px-2 py-1 text-xs text-muted transition-colors hover:border-accent/40 hover:text-ink"
-              >
-                <Plus className="h-3 w-3" />
-                {r.displayName}
-              </button>
+              // Hover reveals a remove control; the chip itself still adds.
+              <span key={r.id} className="group relative inline-flex">
+                <button
+                  onClick={() => add(h)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border bg-panel/60 px-2 py-1 text-xs text-muted transition-all hover:border-accent/40 hover:text-ink group-hover:pr-6"
+                >
+                  <Plus className="h-3 w-3" />
+                  {r.displayName}
+                </button>
+                <button
+                  onClick={() => onRemoveRoster(r.id)}
+                  title={`Remove ${r.displayName} from roster`}
+                  aria-label={`Remove ${r.displayName} from roster`}
+                  className="absolute right-1 top-1/2 hidden h-4 w-4 -translate-y-1/2 items-center justify-center rounded text-faint hover:text-danger group-hover:flex"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
             )
           })}
+          {!showAllRoster && rosterSuggestions.length > VISIBLE_ROSTER && (
+            <button
+              onClick={() => setShowAllRoster(true)}
+              className="rounded-lg px-1.5 py-1 text-xs text-faint transition-colors hover:text-ink"
+            >
+              +{rosterSuggestions.length - VISIBLE_ROSTER} more
+            </button>
+          )}
         </div>
       )}
     </div>

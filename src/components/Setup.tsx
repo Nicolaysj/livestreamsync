@@ -18,7 +18,8 @@ export interface SetupForm {
 
 function durationLabel(start: string, stop: string): string | null {
   try {
-    const a = parseTimecodeToSec(start)
+    if (!start.trim() && !stop.trim()) return 'entire VOD'
+    const a = start.trim() ? parseTimecodeToSec(start) : 0
     if (!stop.trim()) return 'to end of VOD'
     const b = parseTimecodeToSec(stop)
     if (b > a) return secToTimecode(b - a)
@@ -32,6 +33,7 @@ export function Setup({
   form,
   setForm,
   roster,
+  onRemoveRoster,
   onAnalyze,
   analyzing,
   error,
@@ -40,6 +42,7 @@ export function Setup({
   form: SetupForm
   setForm: (f: SetupForm) => void
   roster: RosterEntry[]
+  onRemoveRoster: (id: string) => void
   onAnalyze: () => void
   analyzing: boolean
   error?: string
@@ -48,8 +51,9 @@ export function Setup({
 }) {
   const set = <K extends keyof SetupForm>(k: K, v: SetupForm[K]) => setForm({ ...form, [k]: v })
   const dur = durationLabel(form.start, form.stop)
-  // Stop is optional — blank means "to the end of the VOD".
-  const canRun = form.anchorUrl.trim() && form.start.trim() && form.handles.length > 0
+  // Start and stop are both optional — blank start = VOD start, blank stop =
+  // VOD end, both blank = the entire VOD.
+  const canRun = form.anchorUrl.trim() && form.handles.length > 0
 
   const pickFolder = async () => {
     const dir = await window.livestreamsync?.pickFolder?.()
@@ -78,7 +82,7 @@ export function Setup({
         />
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Start" placeholder="04:40:21" value={form.start} onChange={(e) => set('start', e.target.value)} />
+          <Field label="Start" placeholder="Empty = start of VOD" value={form.start} onChange={(e) => set('start', e.target.value)} />
           <div className="relative">
             <Field label="Stop" placeholder="Empty = end of VOD" value={form.stop} onChange={(e) => set('stop', e.target.value)} />
             {dur && (
@@ -89,7 +93,7 @@ export function Setup({
           </div>
         </div>
 
-        <StreamerInput handles={form.handles} onChange={(h) => set('handles', h)} roster={roster} />
+        <StreamerInput handles={form.handles} onChange={(h) => set('handles', h)} roster={roster} onRemoveRoster={onRemoveRoster} />
 
         <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-border bg-panel/40 p-4">
           <div className="min-w-0 flex-1">

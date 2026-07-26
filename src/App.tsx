@@ -68,9 +68,10 @@ export default function App() {
     let startSec: number
     let endSec: number
     try {
-      startSec = parseTimecodeToSec(form.start)
-      // Blank stop = "to the end of the VOD"; the engine clamps Infinity to the
-      // anchor's real duration (and errors if the VOD doesn't report one).
+      // Blank start = the very start of the VOD; blank stop = "to the end" (the
+      // engine clamps Infinity to the anchor's real duration and errors if the
+      // VOD doesn't report one). Both blank = the entire VOD.
+      startSec = form.start.trim() ? parseTimecodeToSec(form.start) : 0
       endSec = form.stop.trim() ? parseTimecodeToSec(form.stop) : Number.POSITIVE_INFINITY
     } catch {
       setError('Check your start/stop times — use HH:MM:SS.')
@@ -112,6 +113,14 @@ export default function App() {
       povs: analysis.povs.map((p) =>
         p.handle === target.handle && p.platform === target.platform ? { ...p, selected: !p.selected } : p,
       ),
+    })
+  }
+
+  const removeRoster = (id: string) => {
+    setRoster((prev) => {
+      const next = prev.filter((r) => r.id !== id)
+      void api.saveRoster(next).catch(() => {})
+      return next
     })
   }
 
@@ -221,6 +230,7 @@ export default function App() {
                 form={form}
                 setForm={setForm}
                 roster={roster}
+                onRemoveRoster={removeRoster}
                 onAnalyze={runAnalyze}
                 analyzing={analyzing}
                 error={error}

@@ -80,8 +80,8 @@ async function main() {
 
   // The explicit <start> argument always wins; a ?t= carried along in a copied
   // "URL at current time" must not silently override what the user typed.
-  const startSec = parseTimecodeToSec(startRaw)
-  // "end" = to the end of the VOD (the engine clamps to the anchor's duration).
+  // "start"/"end" keywords = the VOD's own bounds (end is clamped by the engine).
+  const startSec = startRaw.toLowerCase() === 'start' ? 0 : parseTimecodeToSec(startRaw)
   const endSec = stopRaw.toLowerCase() === 'end' ? Number.POSITIVE_INFINITY : parseTimecodeToSec(stopRaw)
   const tParam = parseTParam(anchorUrl)
   if (tParam != null && tParam !== startSec) {

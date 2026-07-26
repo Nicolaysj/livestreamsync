@@ -15,6 +15,16 @@ All notable changes, written for the people who use LivestreamSync — not commi
 
 _Nothing yet._
 
+## [0.5.1] - 2026-07-26
+
+- **Blank Start = start of VOD** — the Start field is now optional too: leave it
+  empty to begin at the very start of the stream. Leave both fields empty to grab
+  the entire VOD (the duration chip says so before you commit). CLI: `start` and
+  `end` keywords.
+- **Roster cleanup** — hover a roster suggestion to remove it, and long rosters
+  now tuck themselves behind a "+N more" button. Recent collaborators float to
+  the front automatically, so the people you work with most stay one click away.
+
 ## [0.5.0] - 2026-07-22
 
 - **Twitch chat download** — a new toggle grabs each POV's chat for exactly your

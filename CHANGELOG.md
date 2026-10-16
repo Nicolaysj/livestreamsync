@@ -13,7 +13,10 @@ All notable changes, written for the people who use LivestreamSync — not commi
 
 ## Unreleased
 
-_Nothing yet._
+- **Timeline matches your best POV** — when POVs download at different
+  resolutions (say 1080p, 1080p and 1440p), the exported timeline is now built
+  at the largest one instead of always 1080p, so the sharpest source is never
+  downscaled. Each clip in the XML also reports its real size.
 
 ## [0.5.1] - 2026-07-26
 

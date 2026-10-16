@@ -5,12 +5,16 @@ import { mkdir, stat, rm, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Tools } from './tools.js'
 import { stream } from './exec.js'
+import { probeFrameSize } from './probe.js'
 import { sanitizeFilenamePart, clampFinite, isAllowedVodUrl } from './validate.js'
 import type { DownloadOptions, Platform, Quality, ResolvedSegment } from './types.js'
 
 export interface DownloadResult {
   outputFile: string
   bytes: number
+  /** Actual frame size of the downloaded clip, when ffmpeg could read it. */
+  width?: number
+  height?: number
 }
 
 export interface DownloadProgress {
@@ -214,6 +218,10 @@ export async function downloadSegment(
   }
   if (bytes === 0) return fail(new Error('Download produced an empty file.'))
 
+  // POVs can land at different resolutions (Source may be 1080p for one streamer,
+  // 1440p for another) — record the real size so the timeline can match the best.
+  const size = await probeFrameSize(tools.ffmpeg, outputFile)
+
   onProgress({ percent: 100 })
-  return { outputFile, bytes }
+  return { outputFile, bytes, ...size }
 }

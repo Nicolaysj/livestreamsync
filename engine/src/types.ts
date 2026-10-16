@@ -56,6 +56,9 @@ export interface POVResult {
   selected: boolean
   outputFile?: string
   fileBytes?: number
+  /** Frame size of the downloaded clip (probed after download; may be absent). */
+  videoWidth?: number
+  videoHeight?: number
   /** Per-POV chat opt-in (Twitch only); when unset, DownloadOptions.chat applies. */
   chatSelected?: boolean
   /** Path to the downloaded chat JSON (Twitch POVs with chat enabled). */

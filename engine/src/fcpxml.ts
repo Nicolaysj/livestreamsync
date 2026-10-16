@@ -9,14 +9,16 @@ export interface FcpClipInput {
   vodStartMs: number // wall-clock of the clip's VOD position 0
   offsetSec: number // window start inside the VOD
   windowLenSec: number
+  width?: number // probed frame size; falls back to the sequence's
+  height?: number
 }
 
 export interface FcpExportOptions {
   sequenceName: string
   fps: number // e.g. 60
   ntsc: boolean // true only for 29.97/59.94
-  width: number
-  height: number
+  width?: number // sequence frame; defaults to the largest clip, else 1920x1080
+  height?: number
   pad: number // padding seconds used during download
   clips: FcpClipInput[]
 }
@@ -44,6 +46,13 @@ function pathUrl(absPath: string): string {
   return 'file://localhost' + encoded
 }
 
+// Frame sizes round-trip through the (untrusted) renderer before export, so only
+// plain in-range integers are allowed into the XML.
+function frameSize(width: unknown, height: unknown): { width: number; height: number } | undefined {
+  const ok = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 16 && n <= 16384
+  return ok(width) && ok(height) ? { width, height } : undefined
+}
+
 function rateBlock(fps: number, ntsc: boolean): string {
   return `<rate><timebase>${fps}</timebase><ntsc>${ntsc ? 'TRUE' : 'FALSE'}</ntsc></rate>`
 }
@@ -59,13 +68,22 @@ function labelBlock(idx: number): string {
 
 /** Build the xmeml document. Returns an XML string. */
 export function buildFcpXml(opts: FcpExportOptions): string {
-  const { fps, ntsc, width, height } = opts
+  const { fps, ntsc } = opts
   // Must mirror the clamp in downloadSegment: the export math assumes the file
   // really starts at offset-pad, so a pad the download refused (e.g. 90 → 60,
   // or negative) would shift every clip on the timeline.
   const pad = clampFinite(opts.pad, 0, 60)
   const clips = opts.clips.filter((c) => c.windowLenSec > 0)
   if (clips.length === 0) throw new Error('No clips to export.')
+
+  // The sequence takes the largest POV's frame so the sharpest source is never
+  // downscaled: 1080p + 1080p + 1440p POVs give a 1440p timeline.
+  let largest: { width: number; height: number } | undefined
+  for (const c of clips) {
+    const s = frameSize(c.width, c.height)
+    if (s && (!largest || s.width * s.height > largest.width * largest.height)) largest = s
+  }
+  const seq = frameSize(opts.width, opts.height) ?? largest ?? { width: 1920, height: 1080 }
 
   type Placed = FcpClipInput & { startFrame: number; durFrames: number; fileId: string; idx: number }
   const computed: Placed[] = clips.map((c, idx) => {
@@ -86,16 +104,18 @@ export function buildFcpXml(opts: FcpExportOptions): string {
 
   // Without an explicit <pixelaspectratio>, Premiere falls back to its DV-preset
   // guess (users saw 1.0940 D1/DV PAL) instead of assuming square pixels.
-  const videoChars =
-    `<samplecharacteristics>${rate}<width>${width}</width><height>${height}</height>` +
+  const videoChars = (s: { width: number; height: number }): string =>
+    `<samplecharacteristics>${rate}<width>${s.width}</width><height>${s.height}</height>` +
     `<anamorphic>FALSE</anamorphic><pixelaspectratio>square</pixelaspectratio>` +
     `<fielddominance>none</fielddominance></samplecharacteristics>`
 
+  // Each file declares its own real size — claiming 1080p for a 1440p file
+  // would misreport it to NLEs that trust the XML over the media.
   const fileDef = (c: Placed): string =>
     `<file id="${c.fileId}"><name>${xmlEscape(c.name)}</name>` +
     `<pathurl>${pathUrl(c.file)}</pathurl>${rate}` +
     `<duration>${c.durFrames}</duration>` +
-    `<media><video>${videoChars}</video>` +
+    `<media><video>${videoChars(frameSize(c.width, c.height) ?? seq)}</video>` +
     `<audio><samplecharacteristics><depth>16</depth><samplerate>48000</samplerate></samplecharacteristics><channelcount>2</channelcount></audio></media></file>`
 
   // FCP7 link semantics (Apple DTD): a valid link is linkclipref OR the full
@@ -161,7 +181,7 @@ export function buildFcpXml(opts: FcpExportOptions): string {
     `<name>${xmlEscape(opts.sequenceName)}</name>` +
     `<duration>${seqDuration}</duration>${rate}` +
     `<media>` +
-    `<video><format>${videoChars}</format>${videoTracks}</video>` +
+    `<video><format>${videoChars(seq)}</format>${videoTracks}</video>` +
     `<audio>${audioTracks}</audio>` +
     `</media>` +
     syncMarker +

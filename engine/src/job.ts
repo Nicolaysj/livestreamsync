@@ -173,6 +173,8 @@ export async function downloadAnalysis(
       )
       p.outputFile = res.outputFile
       p.fileBytes = res.bytes
+      p.videoWidth = res.width
+      p.videoHeight = res.height
       // Chat rides along after the clip: non-fatal — a chat hiccup must never
       // fail a POV whose video downloaded fine. Per-POV choice wins over the
       // job-wide default when set (Review-screen chat pills).
@@ -220,8 +222,8 @@ export async function exportTimeline(analysis: Analysis, opts: ExportOptions): P
     sequenceName: `${sanitizeFilenamePart(analysis.anchor.channel)}_LivestreamSync_${secToTimecode(analysis.window.startMs / 1000 - analysis.anchor.startMs / 1000)}`,
     fps: opts.fps ?? 60,
     ntsc: opts.ntsc ?? false,
-    width: opts.width ?? 1920,
-    height: opts.height ?? 1080,
+    width: opts.width,
+    height: opts.height,
     pad: opts.pad ?? 4,
     clips: done.map((p) => ({
       name: `${p.displayName}`,
@@ -229,6 +231,8 @@ export async function exportTimeline(analysis: Analysis, opts: ExportOptions): P
       vodStartMs: p.segment!.vodStartMs,
       offsetSec: p.segment!.offsetSec,
       windowLenSec: p.segment!.windowLenSec,
+      width: p.videoWidth,
+      height: p.videoHeight,
     })),
   })
 
